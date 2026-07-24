@@ -30,8 +30,6 @@ function resolveSkeletonDir() {
   );
 }
 
-const skeletonDir = resolveSkeletonDir();
-
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes for render
 
