@@ -146,6 +146,9 @@ importers:
       '@remotion/google-fonts':
         specifier: ^4.0.260
         version: 4.0.496(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@remotion/player':
+        specifier: ^4.0.260
+        version: 4.0.496(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@remotion/renderer':
         specifier: ^4.0.260
         version: 4.0.496(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

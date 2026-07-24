@@ -37,6 +37,11 @@ export async function renderComposition(
       }
       if (hostNodeModules && !config.resolve.modules.includes(hostNodeModules)) {
         config.resolve.modules.unshift(hostNodeModules);
+        // On platforms like Render.com with pnpm, we need to explicitly allow resolving from pnpm store's hidden node_modules
+        const pnpmNodeModules = path.join(hostNodeModules, ".pnpm", "node_modules");
+        if (fs.existsSync(pnpmNodeModules)) {
+          config.resolve.modules.push(pnpmNodeModules);
+        }
       }
 
       // Alias @remotion/google-fonts to the host installation so subpaths

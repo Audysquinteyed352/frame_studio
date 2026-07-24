@@ -6,6 +6,7 @@
   "dependencies": {
     "@remotion/bundler": "^4.0.260",
     "@remotion/google-fonts": "^4.0.260",
+    "@remotion/player": "^4.0.260",
     "@remotion/renderer": "^4.0.260",
     "@types/node": "^22.10.7",
     "@types/react": "^18.2.27",
