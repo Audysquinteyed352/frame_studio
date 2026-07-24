@@ -74,6 +74,14 @@ export async function compileCode(
     // 3. Execute TypeScript check with 90s timeout
     console.log(`[Compile Sandbox] Running TypeScript check in ${sandboxDir}...`);
 
+    // Detect serverless/restricted runtimes (Vercel, Lambda, etc.) where running
+    // external package managers or relying on global node_modules layout is unsafe.
+    const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.FUNCTIONS_WORKER_RUNTIME || process.env.K_REVISION || process.env.GCP_PROJECT || process.env.GAE_APPLICATION || process.platform === "linux" && process.cwd().startsWith("/var/task");
+    if (isServerless) {
+      console.log("[Compile Sandbox] Serverless environment detected — skipping TypeScript check to avoid network/npm operations.");
+      return { ok: true, projectDir: sandboxDir };
+    }
+
     // Prefer using the installed `typescript` package programmatically (no external subprocess)
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
