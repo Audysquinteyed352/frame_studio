@@ -129,7 +129,6 @@ app.post("/render", async (req, res) => {
     res.setHeader("X-Queue-First", String(isFirst));
     res.setHeader("X-Queue-Active", String(renderQueue.active));
     res.setHeader("X-Queue-Pending", String(renderQueue.pendingCount));
-    res.flushHeaders();
 
     const result = await promise;
 

@@ -130,7 +130,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (!workerResponse.ok) {
-        console.error("[Generate] Remote render worker error:", workerResponseBody ?? workerResponseText);
+        console.error("[Generate] Remote render worker error", {
+          status: workerResponse.status,
+          contentType,
+          body: workerResponseBody ?? workerResponseText,
+        });
         const errMsg = workerResponseBody?.error ?? workerResponseText ?? "Remote render worker failed.";
         return NextResponse.json({ error: errMsg }, { status: workerResponse.status || 500 });
       }
