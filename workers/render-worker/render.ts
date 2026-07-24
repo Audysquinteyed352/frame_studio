@@ -46,8 +46,8 @@ export async function renderComposition(
       (config.resolve as any).alias = (config.resolve as any).alias || {};
       try {
         const googleFontsPath = hostNodeModules
-          ? path.join(hostNodeModules, "@remotion", "google-fonts")
-          : path.join(process.cwd(), "node_modules", "@remotion", "google-fonts");
+          ? path.join(hostNodeModules, "@remotion", "google-fonts", "dist", "cjs")
+          : path.join(process.cwd(), "node_modules", "@remotion", "google-fonts", "dist", "cjs");
         if (fs.existsSync(googleFontsPath)) {
           (config.resolve as any).alias["@remotion/google-fonts"] = googleFontsPath;
         }
