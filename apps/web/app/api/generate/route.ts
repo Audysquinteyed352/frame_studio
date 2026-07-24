@@ -104,7 +104,10 @@ export async function POST(req: NextRequest) {
     console.log(`[Generate] Rendering complete. Duration: ${renderResult.durationSeconds}s`);
 
     // Return video as direct download
-    return new NextResponse(renderResult.videoBuffer, {
+    const videoBuffer = renderResult.videoBuffer instanceof Buffer
+      ? new Uint8Array(renderResult.videoBuffer)
+      : renderResult.videoBuffer;
+    return new NextResponse(videoBuffer, {
       headers: {
         "Content-Type": "video/mp4",
         "Content-Disposition": `attachment; filename="frame-studio-${Date.now()}.mp4"`,
