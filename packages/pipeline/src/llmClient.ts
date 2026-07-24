@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tryParseJson } from "./repairJson";
+import { tryParseJson } from "./repairJson.js";
 
 // Always resolve .env from monorepo root, regardless of cwd
 const __filename = fileURLToPath(import.meta.url);
@@ -112,14 +112,14 @@ export async function callLLM(
             },
             {
               role: "user",
-              content: `The following JSON is invalid. Fix it and return ONLY valid JSON:\n\n${content}\n\nParse error: ${result.error}`,
+              content: `The following JSON is invalid. Fix it and return ONLY valid JSON:\n\n${content}\n\nParse error: ${(result as { error: string }).error}`,
             },
           ];
           content = await fetchGemini(fixMessages, true, model, apiKey);
         } else {
           throw new Error(
             `Gemini response is not valid JSON after ${MAX_JSON_RETRIES + 1} attempts.\n` +
-            `Parse error: ${result.error}\n` +
+            `Parse error: ${(result as { error: string }).error}\n` +
             `Raw content (first 700 chars): ${content.slice(0, 700)}`
           );
         }

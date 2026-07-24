@@ -1,6 +1,6 @@
-import { callLLM } from "./llmClient";
-import { FIX_SYSTEM_PROMPT } from "./prompts/fixSystemPrompt";
-import { CodeFileMapSchema, type CodeFileMap } from "./schemas";
+import { callLLM } from "./llmClient.js";
+import { FIX_SYSTEM_PROMPT } from "./prompts/fixSystemPrompt.js";
+import { CodeFileMapSchema, type CodeFileMap } from "./schemas.js";
 
 export async function fixCode(
   files: CodeFileMap,

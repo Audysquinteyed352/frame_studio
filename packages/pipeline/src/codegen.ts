@@ -1,6 +1,6 @@
-import { callLLM } from "./llmClient";
-import { CODEGEN_SYSTEM_PROMPT } from "./prompts/codegenSystemPrompt";
-import { CodeFileMapSchema, type Brief, type AssetRef, type CodeFileMap } from "./schemas";
+import { callLLM } from "./llmClient.js";
+import { CODEGEN_SYSTEM_PROMPT } from "./prompts/codegenSystemPrompt.js";
+import { CodeFileMapSchema, type Brief, type AssetRef, type CodeFileMap } from "./schemas.js";
 
 const MAX_CODEGEN_RETRIES = 3;
 
@@ -23,7 +23,7 @@ export function ensureRootFile(files: CodeFileMap, brief: Brief): CodeFileMap {
   // Track if we have an ambient background component
   let backgroundComponent: string | null = null;
 
-  for (const [filename, content] of Object.entries(files)) {
+  for (const [filename, content] of Object.entries(files) as Array<[string, string]>) {
     if (!filename.endsWith(".tsx")) continue;
     const moduleName = filename.replace(/\.tsx$/, "");
 

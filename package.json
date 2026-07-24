@@ -4,6 +4,9 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
+    "worker:dev": "pnpm --dir workers/render-worker dev",
+    "worker:build": "pnpm --dir workers/render-worker build",
+    "worker:start": "pnpm --dir workers/render-worker start",
     "lint": "next lint && npx @typescript-eslint/cli lint packages/*/src/ types/*.ts"
   },
   "devDependencies": {

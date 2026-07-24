@@ -76,53 +76,99 @@ export async function POST(req: NextRequest) {
 
     // STAGE 2: CODEGEN
     console.log(`[Generate] STAGE: Generating Code...`);
-    let code: CodeFileMap = await generateCode(brief, [], model);
-    console.log(`[Generate] Codegen complete. Files: ${Object.keys(code).join(", ")}`);
+    const generatedCode: CodeFileMap = await generateCode(brief, [], model);
+    console.log(`[Generate] Codegen complete. Files: ${Object.keys(generatedCode).join(", ")}`);
 
-    // STAGE 3 & 4: COMPILE & FIX LOOP
-    console.log(`[Generate] STAGE: Compiling...`);
-    const { compileCode } = await import("../../../../../workers/render-worker/compile");
-    let currentCode = { ...code };
-    let attempt = 0;
-    let compiledProjectDir: string | null = null;
-    const maxRetries = 3;
+    const renderWorkerUrl = process.env.RENDER_WORKER_URL?.trim();
+    const requireRemoteWorker = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+    let renderResult: { videoBuffer: Buffer; durationSeconds: number };
 
-    while (attempt <= maxRetries) {
-      const compileResult = await compileCode(currentCode, skeletonDir);
+    if (requireRemoteWorker && !renderWorkerUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "Production deployment requires RENDER_WORKER_URL to be configured. Set this to a separate render worker service for Vercel.",
+        },
+        { status: 500 }
+      );
+    }
 
-      if (compileResult.ok) {
-        console.log(`[Generate] Compilation succeeded on attempt ${attempt}`);
-        compiledProjectDir = compileResult.projectDir!;
-        code = currentCode;
-        break;
+    if (renderWorkerUrl) {
+      console.log(`[Generate] Using remote render worker: ${renderWorkerUrl}`);
+      const workerEndpoint = new URL("/render", renderWorkerUrl).toString();
+      const workerResponse = await fetch(workerEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: generatedCode }),
+      });
+
+      const workerResponseBody = await workerResponse.json();
+      if (!workerResponse.ok) {
+        console.error("[Generate] Remote render worker error:", workerResponseBody);
+        return NextResponse.json(
+          { error: workerResponseBody.error || "Remote render worker failed." },
+          { status: workerResponse.status || 500 }
+        );
       }
 
-      attempt++;
-      console.warn(`[Generate] Compilation failed (attempt ${attempt}/${maxRetries}):`);
-      console.warn(compileResult.error);
-
-      if (attempt > maxRetries) {
+      if (!workerResponseBody?.mp4) {
         return NextResponse.json(
-          {
-            error: `Compilation failed after ${maxRetries} attempts: ${compileResult.error}`,
-          },
+          { error: "Remote render worker returned an invalid response." },
           { status: 500 }
         );
       }
 
-      console.log(`[Generate] Calling Fix AI for attempt ${attempt}...`);
-      currentCode = await fixCode(currentCode, compileResult.error!, model);
-    }
+      renderResult = {
+        videoBuffer: Buffer.from(workerResponseBody.mp4, "base64"),
+        durationSeconds: workerResponseBody.durationSeconds,
+      };
+      console.log(`[Generate] Remote render worker completed. Duration: ${renderResult.durationSeconds}s`);
+    } else {
+      // STAGE 3 & 4: COMPILE & FIX LOOP
+      console.log(`[Generate] STAGE: Compiling...`);
+      const { compileCode } = await import("../../../../../workers/render-worker/compile");
+      let currentCode = { ...generatedCode };
+      let attempt = 0;
+      let compiledProjectDir: string | null = null;
+      const maxRetries = 3;
 
-    if (!compiledProjectDir) {
-      throw new Error("Missing compiled project directory");
-    }
+      while (attempt <= maxRetries) {
+        const compileResult = await compileCode(currentCode, skeletonDir);
 
-    // STAGE 5: RENDERING
-    console.log(`[Generate] STAGE: Rendering MP4 & Thumbnail...`);
-    const { renderComposition } = await import("../../../../../workers/render-worker/render");
-    const renderResult = await renderComposition(compiledProjectDir);
-    console.log(`[Generate] Rendering complete. Duration: ${renderResult.durationSeconds}s`);
+        if (compileResult.ok) {
+          console.log(`[Generate] Compilation succeeded on attempt ${attempt}`);
+          compiledProjectDir = compileResult.projectDir!;
+          currentCode = compileResult.ok ? currentCode : currentCode;
+          break;
+        }
+
+        attempt++;
+        console.warn(`[Generate] Compilation failed (attempt ${attempt}/${maxRetries}):`);
+        console.warn(compileResult.error);
+
+        if (attempt > maxRetries) {
+          return NextResponse.json(
+            {
+              error: `Compilation failed after ${maxRetries} attempts: ${compileResult.error}`,
+            },
+            { status: 500 }
+          );
+        }
+
+        console.log(`[Generate] Calling Fix AI for attempt ${attempt}...`);
+        currentCode = await fixCode(currentCode, compileResult.error!, model);
+      }
+
+      if (!compiledProjectDir) {
+        throw new Error("Missing compiled project directory");
+      }
+
+      // STAGE 5: RENDERING
+      console.log(`[Generate] STAGE: Rendering MP4 & Thumbnail...`);
+      const { renderComposition } = await import("../../../../../workers/render-worker/render");
+      renderResult = await renderComposition(compiledProjectDir);
+      console.log(`[Generate] Rendering complete. Duration: ${renderResult.durationSeconds}s`);
+    }
 
     // Return video as direct download
     return new NextResponse(renderResult.videoBuffer as unknown as BodyInit, {

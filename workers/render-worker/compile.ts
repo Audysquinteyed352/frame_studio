@@ -26,7 +26,7 @@ export function validateStaticImports(files: CodeFileMap): { ok: boolean; error?
   for (const [filename, content] of Object.entries(files)) {
     let match: RegExpExecArray | null;
     while ((match = importRegex.exec(content)) !== null) {
-      const importPath = match[1];
+      const importPath = match[1] ?? "";
       const isRelative = importPath.startsWith("./") || importPath.startsWith("../");
       const isAllowedPackage = ALLOWED_IMPORTS.some(
         (allowed) => importPath === allowed || importPath.startsWith(`${allowed}/`)
@@ -58,28 +58,52 @@ export async function compileCode(
   const sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), "remotion-sandbox-"));
 
   try {
-    // Copy base skeleton (package.json, tsconfig.json, node_modules)
+    // Copy base skeleton files into sandbox
     fs.cpSync(skeletonDir, sandboxDir, { recursive: true });
+
+    const hostNodeModules = path.join(process.cwd(), "node_modules");
+    const sandboxNodeModules = path.join(sandboxDir, "node_modules");
+    if (fs.existsSync(hostNodeModules)) {
+      try {
+        if (fs.existsSync(sandboxNodeModules)) {
+          fs.rmSync(sandboxNodeModules, { recursive: true, force: true });
+        }
+        fs.symlinkSync(
+          hostNodeModules,
+          sandboxNodeModules,
+          process.platform === "win32" ? "junction" : "dir"
+        );
+        console.log("[Compile Sandbox] Symlinked sandbox node_modules to host node_modules.");
+      } catch (e) {
+        console.log(
+          "[Compile Sandbox] Could not symlink host node_modules into sandbox, falling back to vendoring:",
+          (e as any).message || e
+        );
+      }
+    }
 
     // Write file map into src/
     const srcDir = path.join(sandboxDir, "src");
     fs.mkdirSync(srcDir, { recursive: true });
 
-    for (const [filename, content] of Object.entries(files)) {
+    for (const [filename, content] of Object.entries(files) as Array<[string, string]>) {
       const filePath = path.join(srcDir, filename.replace(/^src\//, ""));
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
       fs.writeFileSync(filePath, content, "utf-8");
     }
 
-    // Ensure sandbox has required runtime packages available by vendoring
-    // specific host-installed packages (e.g. @remotion/google-fonts) into
-    // the sandbox node_modules so bundling inside the sandbox can resolve them.
+    // Ensure sandbox has required runtime packages available by vendoring specific
+    // host-installed packages when symlinking host node_modules is unavailable.
     try {
-      const hostNodeModules = path.join(process.cwd(), "node_modules");
       const pkgToVendor = ["@remotion/google-fonts"];
+      const sandboxNodeModulesDir = path.join(sandboxDir, "node_modules");
+      if (!fs.existsSync(sandboxNodeModulesDir)) {
+        fs.mkdirSync(sandboxNodeModulesDir, { recursive: true });
+      }
+      const hostNodeModules = path.join(process.cwd(), "node_modules");
       for (const pkg of pkgToVendor) {
         const hostPkgPath = path.join(hostNodeModules, ...pkg.split("/"));
-        const sandboxPkgPath = path.join(sandboxDir, "node_modules", ...pkg.split("/"));
+        const sandboxPkgPath = path.join(sandboxNodeModulesDir, ...pkg.split("/"));
         if (fs.existsSync(hostPkgPath)) {
           fs.mkdirSync(path.dirname(sandboxPkgPath), { recursive: true });
           fs.cpSync(hostPkgPath, sandboxPkgPath, { recursive: true });

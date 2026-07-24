@@ -1,6 +1,6 @@
-import { callLLM } from "./llmClient";
-import { PLAN_SYSTEM_PROMPT } from "./prompts/planSystemPrompt";
-import { PlanResultSchema, type PlanResult } from "./schemas";
+import { callLLM } from "./llmClient.js";
+import { PLAN_SYSTEM_PROMPT } from "./prompts/planSystemPrompt.js";
+import { PlanResultSchema, type PlanResult } from "./schemas.js";
 
 export async function planFromPrompt(userPrompt: string, modelName?: string): Promise<PlanResult> {
   const messages = [

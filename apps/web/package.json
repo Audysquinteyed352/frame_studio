@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "pnpm --filter pipeline build",
+    "prebuild": "pnpm --filter pipeline build",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -13,6 +15,8 @@
     "@remotion/player": "^4.0.260",
     "@remotion/bundler": "^4.0.260",
     "@remotion/renderer": "^4.0.260",
+    "@remotion/google-fonts": "^4.0.260",
+    "@remotion/cli": "^4.0.260",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.0",
     "lucide-react": "^0.473.0",
