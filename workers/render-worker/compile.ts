@@ -76,7 +76,17 @@ export async function compileCode(
 
     // Detect serverless/restricted runtimes (Vercel, Lambda, etc.) where running
     // external package managers or relying on global node_modules layout is unsafe.
-    const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.FUNCTIONS_WORKER_RUNTIME || process.env.K_REVISION || process.env.GCP_PROJECT || process.env.GAE_APPLICATION || process.platform === "linux" && process.cwd().startsWith("/var/task");
+    const isServerless =
+      !!process.env.VERCEL ||
+      !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      !!process.env.FUNCTIONS_WORKER_RUNTIME ||
+      !!process.env.K_REVISION ||
+      !!process.env.GCP_PROJECT ||
+      !!process.env.GAE_APPLICATION ||
+      // presence of typical serverless deploy root
+      fs.existsSync("/var/task") ||
+      // Vercel sandbox home path pattern
+      (process.env.HOME && process.env.HOME.startsWith("/home/sbx_user"));
     if (isServerless) {
       console.log("[Compile Sandbox] Serverless environment detected — skipping TypeScript check to avoid network/npm operations.");
       return { ok: true, projectDir: sandboxDir };
