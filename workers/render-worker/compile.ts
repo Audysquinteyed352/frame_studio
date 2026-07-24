@@ -73,11 +73,24 @@ export async function compileCode(
 
     // 3. Execute TypeScript check with 90s timeout
     console.log(`[Compile Sandbox] Running tsc --noEmit in ${sandboxDir}...`);
-    // Look for tsc in monorepo root node_modules first, then skeleton, then npx
-    const rootTsc = path.resolve(skeletonDir, "../../../node_modules/.bin/tsc");
+    // Look for tsc in monorepo root node_modules first, then skeleton, then pnpm
+    // skeletonDir: <repo>/packages/remotion-skeleton
+    // monorepo root is two levels up from skeletonDir: <repo>/
+    const rootTsc = path.resolve(skeletonDir, "../../node_modules/.bin/tsc");
+    const rootTscCmd = path.resolve(skeletonDir, "../../node_modules/.bin/tsc.cmd");
     const skeletonTsc = path.resolve(skeletonDir, "node_modules/.bin/tsc");
-    const tscBin = fs.existsSync(rootTsc) ? rootTsc : fs.existsSync(skeletonTsc) ? skeletonTsc : null;
-    const tscCmd = tscBin ? `"${tscBin}"` : "npx tsc";
+    const skeletonTscCmd = path.resolve(skeletonDir, "node_modules/.bin/tsc.cmd");
+
+    let tscCmd = "pnpm exec tsc";
+    if (process.platform === "win32") {
+      if (fs.existsSync(rootTscCmd)) tscCmd = `"${rootTscCmd}"`;
+      else if (fs.existsSync(skeletonTscCmd)) tscCmd = `"${skeletonTscCmd}"`;
+      else if (fs.existsSync(rootTsc)) tscCmd = `"${rootTsc}"`;
+      else if (fs.existsSync(skeletonTsc)) tscCmd = `"${skeletonTsc}"`;
+    } else {
+      if (fs.existsSync(rootTsc)) tscCmd = `"${rootTsc}"`;
+      else if (fs.existsSync(skeletonTsc)) tscCmd = `"${skeletonTsc}"`;
+    }
     console.log(`[Compile Sandbox] Using tsc: ${tscCmd}`);
 
     await execAsync(`${tscCmd} --noEmit`, {
