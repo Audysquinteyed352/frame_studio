@@ -71,6 +71,27 @@ export async function compileCode(
       fs.writeFileSync(filePath, content, "utf-8");
     }
 
+    // Ensure sandbox has required runtime packages available by vendoring
+    // specific host-installed packages (e.g. @remotion/google-fonts) into
+    // the sandbox node_modules so bundling inside the sandbox can resolve them.
+    try {
+      const hostNodeModules = path.join(process.cwd(), "node_modules");
+      const pkgToVendor = ["@remotion/google-fonts"];
+      for (const pkg of pkgToVendor) {
+        const hostPkgPath = path.join(hostNodeModules, ...pkg.split("/"));
+        const sandboxPkgPath = path.join(sandboxDir, "node_modules", ...pkg.split("/"));
+        if (fs.existsSync(hostPkgPath)) {
+          fs.mkdirSync(path.dirname(sandboxPkgPath), { recursive: true });
+          fs.cpSync(hostPkgPath, sandboxPkgPath, { recursive: true });
+          console.log(`[Compile Sandbox] Vendored ${pkg} into sandbox node_modules`);
+        } else {
+          console.log(`[Compile Sandbox] Host package ${pkg} not found at ${hostPkgPath}, skipping vendoring.`);
+        }
+      }
+    } catch (e) {
+      console.log("[Compile Sandbox] Failed to vendor host packages into sandbox:", (e as any).message || e);
+    }
+
     // 3. Execute TypeScript check with 90s timeout
     console.log(`[Compile Sandbox] Running TypeScript check in ${sandboxDir}...`);
 
