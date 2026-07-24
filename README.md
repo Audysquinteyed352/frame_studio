@@ -1,5 +1,7 @@
 # Frame Studio
 
+![demo](image.png)
+
 AI motion graphics generator using React, Remotion, TypeScript, and Google Gemini API.
 
 Provide a text prompt and API key. Frame Studio generates a Remotion video project, compiles it, renders an MP4, and streams it to your browser for download.
