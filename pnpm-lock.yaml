@@ -53,6 +53,9 @@ importers:
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
     devDependencies:
       '@types/node':
         specifier: ^22.10.7
@@ -78,9 +81,6 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(tsx@4.23.1)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
 
   packages/pipeline:
     dependencies:
