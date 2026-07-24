@@ -73,15 +73,17 @@ export async function compileCode(
 
     // 3. Execute TypeScript check with 90s timeout
     console.log(`[Compile Sandbox] Running tsc --noEmit in ${sandboxDir}...`);
-    // Look for tsc in monorepo root node_modules first, then skeleton, then pnpm
-    // skeletonDir: <repo>/packages/remotion-skeleton
-    // monorepo root is two levels up from skeletonDir: <repo>/
+    // Look for tsc in monorepo root node_modules first, then skeleton, then local typescript bin, then npm/pnpm exec
     const rootTsc = path.resolve(skeletonDir, "../../node_modules/.bin/tsc");
     const rootTscCmd = path.resolve(skeletonDir, "../../node_modules/.bin/tsc.cmd");
     const skeletonTsc = path.resolve(skeletonDir, "node_modules/.bin/tsc");
     const skeletonTscCmd = path.resolve(skeletonDir, "node_modules/.bin/tsc.cmd");
+    const rootTscNode = path.resolve(skeletonDir, "../../node_modules/typescript/bin/tsc");
+    const skeletonTscNode = path.resolve(skeletonDir, "node_modules/typescript/bin/tsc");
 
-    let tscCmd = "pnpm exec tsc";
+    let tscCmd: string | null = null;
+
+    // Prefer direct bin files (cmd on Windows)
     if (process.platform === "win32") {
       if (fs.existsSync(rootTscCmd)) tscCmd = `"${rootTscCmd}"`;
       else if (fs.existsSync(skeletonTscCmd)) tscCmd = `"${skeletonTscCmd}"`;
@@ -91,6 +93,32 @@ export async function compileCode(
       if (fs.existsSync(rootTsc)) tscCmd = `"${rootTsc}"`;
       else if (fs.existsSync(skeletonTsc)) tscCmd = `"${skeletonTsc}"`;
     }
+
+    // If bin not found, prefer running the bundled typescript script with node
+    if (!tscCmd) {
+      if (fs.existsSync(rootTscNode)) tscCmd = `node "${rootTscNode}"`;
+      else if (fs.existsSync(skeletonTscNode)) tscCmd = `node "${skeletonTscNode}"`;
+    }
+
+    // If still not found, try npm/pnpm exec (npm preferred because pnpm might not be present in runtimes)
+    if (!tscCmd) {
+      try {
+        await execAsync("npm --version");
+        tscCmd = "npm exec tsc";
+      } catch (_err) {
+        // npm not available, try pnpm
+        try {
+          await execAsync("pnpm --version");
+          tscCmd = "pnpm exec tsc";
+        } catch (_err2) {
+          // nothing available
+          throw new Error(
+            "TypeScript compiler not found locally and neither npm nor pnpm are available to run it. Ensure 'typescript' is installed in the runtime or provide a local tsc binary."
+          );
+        }
+      }
+    }
+
     console.log(`[Compile Sandbox] Using tsc: ${tscCmd}`);
 
     await execAsync(`${tscCmd} --noEmit`, {
