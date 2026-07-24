@@ -36,13 +36,17 @@ export async function renderComposition(
         currentDir = parent;
       }
       if (hostNodeModules && !config.resolve.modules.includes(hostNodeModules)) {
+        // Add host node_modules for pnpm compatibility - this fixes 'node_modules/.pnpm/node_modules' resolution
         config.resolve.modules.unshift(hostNodeModules);
         // On platforms like Render.com with pnpm, we need to explicitly allow resolving from pnpm store's hidden node_modules
         const pnpmNodeModules = path.join(hostNodeModules, ".pnpm", "node_modules");
         if (fs.existsSync(pnpmNodeModules)) {
+          // Add pnpm hidden node_modules last to avoid conflicts
           config.resolve.modules.push(pnpmNodeModules);
         }
       }
+      // Clean up any duplicate entries
+      config.resolve.modules = Array.from(new Set(config.resolve.modules));
 
       // Alias @remotion/google-fonts to the host installation so subpaths
       // like '@remotion/google-fonts/Inter' can be resolved when the sandbox
@@ -71,6 +75,56 @@ export async function renderComposition(
         }
       } catch (e) {
         // ignore aliasing if it fails
+      }
+      
+      // Add common aliases for packages that @remotion/studio depends on but might not be in sandbox
+      // This fixes 'Module not found' errors for packages used within @remotion/studio
+      const commonAliases = [
+        // @babel dependencies
+        "@babel/generator",
+        "@babel/traverse", 
+        "@babel/helper-module-imports",
+        "@babel/helper-module-transforms",
+        "@jridgewell/source-map",
+        "@jridgewell/trace-mapping",
+        "@jridgewell/gen-mapping",
+        "@jridgewell/remapping",
+        // Vitest includes
+        "@vitest/expect",
+        "@vitest/expect/dist",
+        "@vitest/runner",
+        "@vitest/runner/utils",
+        "@vitest/snapshot",
+        "@vitest/ui",
+        "@vitest/spy",
+        "@vitest/utils",
+        "@vitest/utils/dist",
+        "@vitest/utils/node",
+        "@vitest/utils/source-map",
+        // Babel helpers for testing
+        "@babel/helper-plugin-utils",
+        "@babel/plugin-syntax-jsx",
+        "@babel/plugin-syntax-typescript",
+      ];
+      
+      for (const pkg of commonAliases) {
+        let pkgPath = null;
+        if (hostNodeModules) {
+          const potentialPath = path.join(hostNodeModules, ...pkg.split("/"));
+          if (fs.existsSync(potentialPath)) {
+            pkgPath = potentialPath;
+          }
+        }
+        if (!pkgPath) {
+          // Fallback to main node_modules
+          const potentialPath = path.join(process.cwd(), "node_modules", ...pkg.split("/"));
+          if (fs.existsSync(potentialPath)) {
+            pkgPath = potentialPath;
+          }
+        }
+        if (pkgPath && !((config.resolve as any).alias as Record<string, string>)[pkg]) {
+          ((config.resolve as any).alias as Record<string, string>)[pkg] = pkgPath;
+        }
       }
 
       return config;
