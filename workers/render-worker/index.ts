@@ -80,6 +80,7 @@ app.use(
     origin: process.env.WEB_ORIGIN ? process.env.WEB_ORIGIN.split(",") : "*",
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "X-Queue-Position", "X-Queue-First", "X-Queue-Active", "X-Queue-Pending"],
+    exposedHeaders: ["X-Queue-Position", "X-Queue-First", "X-Queue-Active", "X-Queue-Pending", "X-Duration"],
   })
 );
 
@@ -107,9 +108,11 @@ function resolveSkeletonDir() {
 }
 
 app.post("/render", async (req, res) => {
+  console.log("[Render Worker] Received /render request");
   try {
     const files = req.body.files;
     if (!files || typeof files !== "object") {
+      console.warn("[Render Worker] Invalid /render request payload", { body: req.body });
       return res.status(400).json({ error: "Missing or invalid files payload." });
     }
 
@@ -132,14 +135,11 @@ app.post("/render", async (req, res) => {
 
     const result = await promise;
 
-    return res.json({
-      mp4: result.videoBuffer.toString("base64"),
-      durationSeconds: result.durationSeconds,
-      queue: {
-        active: renderQueue.active,
-        pending: renderQueue.pendingCount,
-      },
-    });
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Length", String(result.videoBuffer.length));
+    res.setHeader("X-Duration", String(result.durationSeconds));
+
+    return res.send(result.videoBuffer);
   } catch (err: any) {
     console.error("[Render Worker] Error:", err);
     if (err?.message === "Render queue is full") {
