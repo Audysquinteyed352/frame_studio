@@ -16,9 +16,7 @@ const nextConfig = {
     "@remotion/cli",
     "esbuild"
   ],
-  experimental: {
-    outputFileTracingRoot: path.join(__dirname, "../../"),
-  },
+  outputFileTracingRoot: path.join(__dirname, "../../"),
   images: {
     remotePatterns: [
       {
