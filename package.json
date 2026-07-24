@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build"
+    "build": "pnpm --filter web build",
+    "lint": "next lint && npx @typescript-eslint/cli lint packages/*/src/ types/*.ts"
   },
   "devDependencies": {
     "typescript": "^5.7.2"
