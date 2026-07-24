@@ -13,13 +13,19 @@ class RenderQueue {
         this.maxPending = maxPending;
     }
     enqueue(task) {
+        const position = this.activeCount > 0 ? this.pending.length + 2 : this.pending.length + 1;
         if (this.pending.length >= this.maxPending) {
-            return Promise.reject(new Error("Render queue is full"));
+            return { promise: Promise.reject(new Error("Render queue is full")), position };
         }
-        return new Promise((resolve, reject) => {
-            this.pending.push({ task, resolve, reject });
+        let resolveFn;
+        let rejectFn;
+        const promise = new Promise((resolve, reject) => {
+            resolveFn = resolve;
+            rejectFn = reject;
+            this.pending.push({ task, resolve: resolveFn, reject: rejectFn, position });
             this.processNext();
         });
+        return { promise, position };
     }
     processNext() {
         if (this.activeCount >= this.concurrency || this.pending.length === 0) {
@@ -69,13 +75,20 @@ app.post("/render", async (req, res) => {
             return res.status(400).json({ error: "Missing or invalid files payload." });
         }
         const skeletonDir = resolveSkeletonDir();
-        const result = await renderQueue.enqueue(async () => {
+        const { promise, position } = renderQueue.enqueue(async () => {
             const compileResult = await compileCode(files, skeletonDir);
             if (!compileResult.ok || !compileResult.projectDir) {
                 throw new Error(compileResult.error || "Compilation failed.");
             }
             return renderComposition(compileResult.projectDir);
         });
+        const isFirst = position === 1;
+        res.setHeader("X-Queue-Position", String(position));
+        res.setHeader("X-Queue-First", String(isFirst));
+        res.setHeader("X-Queue-Active", String(renderQueue.active));
+        res.setHeader("X-Queue-Pending", String(renderQueue.pendingCount));
+        res.flushHeaders();
+        const result = await promise;
         return res.json({
             mp4: result.videoBuffer.toString("base64"),
             durationSeconds: result.durationSeconds,
