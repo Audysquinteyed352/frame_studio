@@ -3,6 +3,46 @@ import { renderComposition } from "./render.js";
 import { compileCode } from "./compile.js";
 import path from "node:path";
 import fs from "node:fs";
+class RenderQueue {
+    concurrency;
+    maxPending;
+    activeCount = 0;
+    pending = [];
+    constructor(concurrency, maxPending) {
+        this.concurrency = concurrency;
+        this.maxPending = maxPending;
+    }
+    enqueue(task) {
+        if (this.pending.length >= this.maxPending) {
+            return Promise.reject(new Error("Render queue is full"));
+        }
+        return new Promise((resolve, reject) => {
+            this.pending.push({ task, resolve, reject });
+            this.processNext();
+        });
+    }
+    processNext() {
+        if (this.activeCount >= this.concurrency || this.pending.length === 0) {
+            return;
+        }
+        const job = this.pending.shift();
+        this.activeCount += 1;
+        job.task()
+            .then((result) => job.resolve(result))
+            .catch((error) => job.reject(error))
+            .finally(() => {
+            this.activeCount -= 1;
+            this.processNext();
+        });
+    }
+    get active() {
+        return this.activeCount;
+    }
+    get pendingCount() {
+        return this.pending.length;
+    }
+}
+const renderQueue = new RenderQueue(Number(process.env.RENDER_QUEUE_CONCURRENCY ?? 1), Number(process.env.RENDER_QUEUE_MAX_PENDING ?? 10));
 const app = express();
 app.use(express.json({ limit: "50mb" }));
 function resolveSkeletonDir() {
@@ -29,18 +69,27 @@ app.post("/render", async (req, res) => {
             return res.status(400).json({ error: "Missing or invalid files payload." });
         }
         const skeletonDir = resolveSkeletonDir();
-        const compileResult = await compileCode(files, skeletonDir);
-        if (!compileResult.ok || !compileResult.projectDir) {
-            return res.status(500).json({ error: compileResult.error || "Compilation failed." });
-        }
-        const renderResult = await renderComposition(compileResult.projectDir);
+        const result = await renderQueue.enqueue(async () => {
+            const compileResult = await compileCode(files, skeletonDir);
+            if (!compileResult.ok || !compileResult.projectDir) {
+                throw new Error(compileResult.error || "Compilation failed.");
+            }
+            return renderComposition(compileResult.projectDir);
+        });
         return res.json({
-            mp4: renderResult.videoBuffer.toString("base64"),
-            durationSeconds: renderResult.durationSeconds,
+            mp4: result.videoBuffer.toString("base64"),
+            durationSeconds: result.durationSeconds,
+            queue: {
+                active: renderQueue.active,
+                pending: renderQueue.pendingCount,
+            },
         });
     }
     catch (err) {
         console.error("[Render Worker] Error:", err);
+        if (err?.message === "Render queue is full") {
+            return res.status(503).json({ error: err.message });
+        }
         res.status(500).json({ error: err?.message || "Worker error" });
     }
 });

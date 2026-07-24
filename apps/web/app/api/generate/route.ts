@@ -118,11 +118,32 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const forwardedHeaders: Record<string, string> = {};
+      for (const headerName of [
+        "x-queue-position",
+        "x-queue-first",
+        "x-queue-active",
+        "x-queue-pending",
+      ]) {
+        const headerValue = workerResponse.headers.get(headerName);
+        if (headerValue) {
+          forwardedHeaders[headerName] = headerValue;
+        }
+      }
+
       renderResult = {
         videoBuffer: Buffer.from(workerResponseBody.mp4, "base64"),
         durationSeconds: workerResponseBody.durationSeconds,
       };
       console.log(`[Generate] Remote render worker completed. Duration: ${renderResult.durationSeconds}s`);
+      return new NextResponse(renderResult.videoBuffer as unknown as BodyInit, {
+        headers: {
+          "Content-Type": "video/mp4",
+          "Content-Disposition": `attachment; filename="frame-studio-${Date.now()}.mp4"`,
+          "X-Duration": renderResult.durationSeconds.toString(),
+          ...forwardedHeaders,
+        },
+      });
     } else {
       // STAGE 3 & 4: COMPILE & FIX LOOP
       console.log(`[Generate] STAGE: Compiling...`);

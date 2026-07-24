@@ -5,10 +5,13 @@
   "type": "module",
   "dependencies": {
     "@remotion/bundler": "^4.0.260",
+    "@remotion/google-fonts": "^4.0.260",
     "@remotion/renderer": "^4.0.260",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "pipeline": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "remotion": "^4.0.260",
     "zod": "^3.24.1"
   },

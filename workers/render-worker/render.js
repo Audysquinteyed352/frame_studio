@@ -12,8 +12,21 @@ export async function renderComposition(projectDir) {
             // Ensure bundler resolves modules from the main project's node_modules
             config.resolve = config.resolve || {};
             config.resolve.modules = config.resolve.modules || [];
-            const hostNodeModules = path.join(process.cwd(), "node_modules");
-            if (!config.resolve.modules.includes(hostNodeModules)) {
+            let currentDir = process.cwd();
+            let hostNodeModules = null;
+            while (true) {
+                const candidate = path.join(currentDir, "node_modules");
+                if (fs.existsSync(candidate)) {
+                    hostNodeModules = candidate;
+                    break;
+                }
+                const parent = path.dirname(currentDir);
+                if (parent === currentDir) {
+                    break;
+                }
+                currentDir = parent;
+            }
+            if (hostNodeModules && !config.resolve.modules.includes(hostNodeModules)) {
                 config.resolve.modules.unshift(hostNodeModules);
             }
             // Alias @remotion/google-fonts to the host installation so subpaths
@@ -22,7 +35,9 @@ export async function renderComposition(projectDir) {
             // Cast to any because webpack types allow multiple shapes for alias
             config.resolve.alias = config.resolve.alias || {};
             try {
-                const googleFontsPath = path.join(process.cwd(), "node_modules", "@remotion", "google-fonts");
+                const googleFontsPath = hostNodeModules
+                    ? path.join(hostNodeModules, "@remotion", "google-fonts")
+                    : path.join(process.cwd(), "node_modules", "@remotion", "google-fonts");
                 if (fs.existsSync(googleFontsPath)) {
                     config.resolve.alias["@remotion/google-fonts"] = googleFontsPath;
                 }

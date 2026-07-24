@@ -11,6 +11,12 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(false);
   const [progressStage, setProgressStage] = useState("");
+  const [queueInfo, setQueueInfo] = useState<{
+    position?: number;
+    isFirst?: boolean;
+    active?: number;
+    pending?: number;
+  }>({});
   const [preview, setPreview] = useState<{ url: string; filename: string } | null>(null);
 
   const handleGenerate = async (prompt: string, model: string) => {
@@ -24,7 +30,27 @@ export default function HomePage() {
         body: JSON.stringify({ prompt, model }),
       });
 
-      setProgressStage("Downloading...");
+      const queuePositionHeader = res.headers.get("x-queue-position");
+      const queueFirstHeader = res.headers.get("x-queue-first");
+      const queueActiveHeader = res.headers.get("x-queue-active");
+      const queuePendingHeader = res.headers.get("x-queue-pending");
+      const queuePosition = queuePositionHeader ? Number(queuePositionHeader) : undefined;
+      const queueFirst = queueFirstHeader === "true";
+      const queueActive = queueActiveHeader ? Number(queueActiveHeader) : undefined;
+      const queuePending = queuePendingHeader ? Number(queuePendingHeader) : undefined;
+
+      const hasQueueInfo = queuePosition !== undefined && !Number.isNaN(queuePosition);
+      if (hasQueueInfo) {
+        setQueueInfo({
+          position: queuePosition,
+          isFirst: queueFirst,
+          active: queueActive,
+          pending: queuePending,
+        });
+        setProgressStage(queueFirst ? "Rendering your video..." : `Queued in line (${queuePosition})`);
+      } else {
+        setProgressStage("Downloading...");
+      }
 
       if (!res.ok) {
         let errorMessage = `Server error (${res.status})`;
@@ -62,12 +88,14 @@ export default function HomePage() {
       const url = window.URL.createObjectURL(blob);
 
       setIsLoading(false);
+      setQueueInfo({});
       setProgressStage("");
       setPreview({ url, filename });
 
     } catch (err: any) {
       alert(err.message || "Failed to generate video");
       setIsLoading(false);
+      setQueueInfo({});
       setProgressStage("");
     }
   };
@@ -82,7 +110,7 @@ export default function HomePage() {
   return (
     <>
       <ApiKeyModal onApiKeySet={() => setApiKeySet(true)} />
-      {isLoading && <ProgressScreen stage={progressStage} />}
+      {isLoading && <ProgressScreen stage={progressStage} queueInfo={queueInfo} />}
       {preview && (
         <PreviewScreen
           videoUrl={preview.url}

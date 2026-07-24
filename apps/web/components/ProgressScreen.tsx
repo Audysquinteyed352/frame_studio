@@ -6,10 +6,19 @@ const SOFT = [0.22, 1, 0.36, 1] as const;
 
 interface ProgressScreenProps {
   stage: string;
+  queueInfo?: {
+    position?: number;
+    isFirst?: boolean;
+    active?: number;
+    pending?: number;
+  };
 }
 
-export const ProgressScreen = ({ stage }: ProgressScreenProps) => {
+export const ProgressScreen = ({ stage, queueInfo }: ProgressScreenProps) => {
   const isDownloading = stage.includes("Download");
+  const queued = queueInfo?.position !== undefined;
+  const queuePosition = queueInfo?.position;
+  const queueFirst = queueInfo?.isFirst;
 
   return (
     <motion.div
@@ -30,7 +39,6 @@ export const ProgressScreen = ({ stage }: ProgressScreenProps) => {
           className="glass rounded-2xl overflow-hidden"
           style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.03), inset 0 1px 0 0 rgba(255,255,255,0.9)" }}
         >
-          {/* Header */}
           <div className="px-6 pt-5 pb-4 flex items-center gap-3">
             <motion.div
               animate={isDownloading ? { scale: [1, 0] } : { rotate: 360 }}
@@ -54,7 +62,6 @@ export const ProgressScreen = ({ stage }: ProgressScreenProps) => {
             </span>
           </div>
 
-          {/* Body */}
           <div className="px-6 pb-6">
             <motion.div
               key={stage}
@@ -62,14 +69,21 @@ export const ProgressScreen = ({ stage }: ProgressScreenProps) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: SOFT }}
             >
-              <p className="text-sm text-[#86868b] font-medium leading-relaxed">
-                {isDownloading
-                  ? "Your video is ready — downloading now..."
-                  : "Processing your prompt through Gemini, rendering frames, and compiling your video. This usually takes a minute."}
-              </p>
+              {queued ? (
+                <p className="text-sm text-[#86868b] font-medium leading-relaxed">
+                  {queueFirst
+                    ? "You are first in the render queue. Rendering begins now."
+                    : `You are queued in position ${queuePosition}. Rendering will start as soon as earlier jobs complete.`}
+                </p>
+              ) : (
+                <p className="text-sm text-[#86868b] font-medium leading-relaxed">
+                  {isDownloading
+                    ? "Your video is ready — downloading now..."
+                    : "Processing your prompt through Gemini, rendering frames, and compiling your video. This usually takes a minute."}
+                </p>
+              )}
             </motion.div>
 
-            {/* Progress bar for generating state */}
             {!isDownloading && (
               <div className="mt-4 h-1 bg-[#0071e3]/10 rounded-full overflow-hidden">
                 <motion.div
@@ -93,7 +107,6 @@ export const ProgressScreen = ({ stage }: ProgressScreenProps) => {
             )}
           </div>
 
-          {/* Status bar */}
           <div className="mx-6 h-[1px] bg-black/[0.05]" />
           <div className="px-6 py-3 flex items-center justify-between text-[11px] text-[#86868b] font-mono">
             <span>Status</span>
@@ -106,4 +119,4 @@ export const ProgressScreen = ({ stage }: ProgressScreenProps) => {
       </motion.div>
     </motion.div>
   );
-};
+}

@@ -10,6 +10,21 @@ const ALLOWED_IMPORTS = [
     "react-dom",
     "@remotion/google-fonts",
 ];
+function findNearestNodeModules(startDir) {
+    let currentDir = startDir;
+    while (true) {
+        const candidate = path.join(currentDir, "node_modules");
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+        const parent = path.dirname(currentDir);
+        if (parent === currentDir) {
+            break;
+        }
+        currentDir = parent;
+    }
+    return null;
+}
 export function validateStaticImports(files) {
     const importRegex = /import\s+[\s\S]*?\s+from\s+['"]([^'"]+)['"]/g;
     for (const [filename, content] of Object.entries(files)) {
@@ -39,7 +54,8 @@ export async function compileCode(files, skeletonDir) {
     try {
         // Copy base skeleton files into sandbox
         fs.cpSync(skeletonDir, sandboxDir, { recursive: true });
-        const hostNodeModules = path.join(process.cwd(), "node_modules");
+        const nearestNodeModules = findNearestNodeModules(process.cwd()) || findNearestNodeModules(skeletonDir);
+        const hostNodeModules = nearestNodeModules ?? path.join(process.cwd(), "node_modules");
         const sandboxNodeModules = path.join(sandboxDir, "node_modules");
         if (fs.existsSync(hostNodeModules)) {
             try {
@@ -52,6 +68,9 @@ export async function compileCode(files, skeletonDir) {
             catch (e) {
                 console.log("[Compile Sandbox] Could not symlink host node_modules into sandbox, falling back to vendoring:", e.message || e);
             }
+        }
+        else {
+            console.log(`[Compile Sandbox] No host node_modules found from ${process.cwd()} or ${skeletonDir}, skipping symlink.`);
         }
         // Write file map into src/
         const srcDir = path.join(sandboxDir, "src");
@@ -69,7 +88,8 @@ export async function compileCode(files, skeletonDir) {
             if (!fs.existsSync(sandboxNodeModulesDir)) {
                 fs.mkdirSync(sandboxNodeModulesDir, { recursive: true });
             }
-            const hostNodeModules = path.join(process.cwd(), "node_modules");
+            const nearestNodeModules = findNearestNodeModules(process.cwd()) || findNearestNodeModules(skeletonDir);
+            const hostNodeModules = nearestNodeModules ?? path.join(process.cwd(), "node_modules");
             for (const pkg of pkgToVendor) {
                 const hostPkgPath = path.join(hostNodeModules, ...pkg.split("/"));
                 const sandboxPkgPath = path.join(sandboxNodeModulesDir, ...pkg.split("/"));

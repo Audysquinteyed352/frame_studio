@@ -20,6 +20,22 @@ const ALLOWED_IMPORTS = [
   "@remotion/google-fonts",
 ];
 
+function findNearestNodeModules(startDir: string): string | null {
+  let currentDir = startDir;
+  while (true) {
+    const candidate = path.join(currentDir, "node_modules");
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = path.dirname(currentDir);
+    if (parent === currentDir) {
+      break;
+    }
+    currentDir = parent;
+  }
+  return null;
+}
+
 export function validateStaticImports(files: CodeFileMap): { ok: boolean; error?: string } {
   const importRegex = /import\s+[\s\S]*?\s+from\s+['"]([^'"]+)['"]/g;
 
@@ -61,7 +77,9 @@ export async function compileCode(
     // Copy base skeleton files into sandbox
     fs.cpSync(skeletonDir, sandboxDir, { recursive: true });
 
-    const hostNodeModules = path.join(process.cwd(), "node_modules");
+    const nearestNodeModules =
+      findNearestNodeModules(process.cwd()) || findNearestNodeModules(skeletonDir);
+    const hostNodeModules = nearestNodeModules ?? path.join(process.cwd(), "node_modules");
     const sandboxNodeModules = path.join(sandboxDir, "node_modules");
     if (fs.existsSync(hostNodeModules)) {
       try {
@@ -80,6 +98,10 @@ export async function compileCode(
           (e as any).message || e
         );
       }
+    } else {
+      console.log(
+        `[Compile Sandbox] No host node_modules found from ${process.cwd()} or ${skeletonDir}, skipping symlink.`
+      );
     }
 
     // Write file map into src/
@@ -100,7 +122,9 @@ export async function compileCode(
       if (!fs.existsSync(sandboxNodeModulesDir)) {
         fs.mkdirSync(sandboxNodeModulesDir, { recursive: true });
       }
-      const hostNodeModules = path.join(process.cwd(), "node_modules");
+      const nearestNodeModules =
+        findNearestNodeModules(process.cwd()) || findNearestNodeModules(skeletonDir);
+      const hostNodeModules = nearestNodeModules ?? path.join(process.cwd(), "node_modules");
       for (const pkg of pkgToVendor) {
         const hostPkgPath = path.join(hostNodeModules, ...pkg.split("/"));
         const sandboxPkgPath = path.join(sandboxNodeModulesDir, ...pkg.split("/"));
