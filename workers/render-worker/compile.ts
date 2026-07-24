@@ -109,7 +109,8 @@ export async function compileCode(
       return { ok: true, projectDir: sandboxDir };
     } catch (e) {
       // If programmatic typescript is not available or fails, fall back to external tsc invocation below
-      console.log("[Compile Sandbox] Programmatic TypeScript check not available or failed, falling back to external tsc:", (e && e.message) || e);
+      const errMsg = e && (e as any).message ? (e as any).message : e;
+      console.log("[Compile Sandbox] Programmatic TypeScript check not available or failed, falling back to external tsc:", errMsg);
     }
     // Look for tsc in monorepo root node_modules first, then skeleton, then local typescript bin, then npm/pnpm exec
     const rootTsc = path.resolve(skeletonDir, "../../node_modules/.bin/tsc");
