@@ -35,6 +35,7 @@ export const maxDuration = 300; // 5 minutes for render
 
 export async function POST(req: NextRequest) {
   try {
+    const skeletonDir = resolveSkeletonDir();
     const body = await req.json();
     const prompt = body.prompt?.trim();
     const model = body.model?.trim() || "gemini-3.5-flash";
