@@ -8,5 +8,6 @@ out
 tmp
 *.mp4
 *.png
+!image.png
 *.jpeg
 *.jpg
