@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'workers/*'
+
+allowBuilds:
+  sharp: true
+
+onlyBuiltDependencies:
+  - "@remotion/renderer"
+  - "esbuild"
+  - "sharp"
