@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["pipeline"],
+  serverExternalPackages: ["@remotion/bundler", "@remotion/renderer", "esbuild"],
   images: {
     remotePatterns: [
       {
@@ -32,12 +33,6 @@ const nextConfig = {
     // Externalize native modules and heavy packages on server
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push(
-        /@rspack\/binding-.*/,
-        'esbuild',
-        '@remotion/bundler',
-        '@remotion/renderer'
-      );
     }
 
     return config;
