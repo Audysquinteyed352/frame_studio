@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { renderComposition } from "./render.js";
 import { compileCode } from "./compile.js";
 import path from "node:path";
@@ -72,6 +73,15 @@ const renderQueue = new RenderQueue(
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));
+
+// CORS: allow the web origin (set WEB_ORIGIN) or allow any origin for testing
+app.use(
+  cors({
+    origin: process.env.WEB_ORIGIN ? process.env.WEB_ORIGIN.split(",") : "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-Queue-Position", "X-Queue-First", "X-Queue-Active", "X-Queue-Pending"],
+  })
+);
 
 function resolveSkeletonDir() {
   const configured = process.env.SKELETON_DIR?.trim();

@@ -20,7 +20,17 @@ export function ApiKeyModal({ onApiKeySet }: ApiKeyModalProps) {
   const checkExistingApiKey = async () => {
     try {
       const res = await fetch("/api/apikey");
-      const data = await res.json();
+      let data: any = {};
+      try {
+        const contentType = res.headers.get("Content-Type") || "";
+        if (contentType.includes("application/json")) {
+          data = await res.json();
+        }
+      } catch (e) {
+        // ignore malformed/empty JSON
+        data = {};
+      }
+
       if (data.hasApiKey) {
         setShowModal(false);
       } else {
@@ -45,10 +55,18 @@ export function ApiKeyModal({ onApiKeySet }: ApiKeyModalProps) {
         body: JSON.stringify({ apiKey: apiKey.trim() }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        const contentType = res.headers.get("Content-Type") || "";
+        if (contentType.includes("application/json")) {
+          data = await res.json();
+        }
+      } catch (e) {
+        data = {};
+      }
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to save API key");
+        throw new Error(data.error || `Failed to save API key (status ${res.status})`);
       }
 
       onApiKeySet(apiKey.trim());

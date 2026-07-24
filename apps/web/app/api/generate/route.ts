@@ -102,22 +102,56 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ files: generatedCode }),
       });
 
-      const workerResponseBody = await workerResponse.json();
+      // Safely handle worker response which may be JSON (with base64 MP4) or binary
+      const contentType = (workerResponse.headers.get("content-type") || "").toLowerCase();
+      let workerResponseBody: any = null;
+      let workerResponseText = "";
+      let workerBinary: Buffer | null = null;
+
+      if (contentType.includes("application/json") || contentType.includes("application/problem+json")) {
+        try {
+          workerResponseBody = await workerResponse.json();
+        } catch (e) {
+          try {
+            workerResponseText = await workerResponse.text();
+          } catch {
+            workerResponseText = "";
+          }
+        }
+      } else if (contentType.startsWith("video/") || contentType === "application/octet-stream") {
+        const ab = await workerResponse.arrayBuffer();
+        workerBinary = Buffer.from(ab);
+      } else {
+        try {
+          workerResponseText = await workerResponse.text();
+        } catch {
+          workerResponseText = "";
+        }
+      }
+
       if (!workerResponse.ok) {
-        console.error("[Generate] Remote render worker error:", workerResponseBody);
-        return NextResponse.json(
-          { error: workerResponseBody.error || "Remote render worker failed." },
-          { status: workerResponse.status || 500 }
-        );
+        console.error("[Generate] Remote render worker error:", workerResponseBody ?? workerResponseText);
+        const errMsg = workerResponseBody?.error ?? workerResponseText ?? "Remote render worker failed.";
+        return NextResponse.json({ error: errMsg }, { status: workerResponse.status || 500 });
       }
 
-      if (!workerResponseBody?.mp4) {
-        return NextResponse.json(
-          { error: "Remote render worker returned an invalid response." },
-          { status: 500 }
-        );
-      }
+      if (workerBinary) {
+        renderResult = { videoBuffer: workerBinary, durationSeconds: Number(workerResponse.headers.get("x-duration") || 0) };
+      } else {
+          if (!workerResponseBody) {
+            console.error("[Generate] Remote worker returned invalid JSON. Raw response:", workerResponseText.slice ? workerResponseText.slice(0, 2000) : workerResponseText);
+            return NextResponse.json({ error: "Remote render worker returned an empty or invalid response." }, { status: 500 });
+          }
 
+        if (!workerResponseBody?.mp4) {
+          return NextResponse.json({ error: "Remote render worker returned an invalid response." }, { status: 500 });
+        }
+
+        renderResult = {
+          videoBuffer: Buffer.from(workerResponseBody.mp4, "base64"),
+          durationSeconds: workerResponseBody.durationSeconds,
+        };
+      }
       const forwardedHeaders: Record<string, string> = {};
       for (const headerName of [
         "x-queue-position",
@@ -131,10 +165,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      renderResult = {
-        videoBuffer: Buffer.from(workerResponseBody.mp4, "base64"),
-        durationSeconds: workerResponseBody.durationSeconds,
-      };
       console.log(`[Generate] Remote render worker completed. Duration: ${renderResult.durationSeconds}s`);
       return new NextResponse(renderResult.videoBuffer as unknown as BodyInit, {
         headers: {
