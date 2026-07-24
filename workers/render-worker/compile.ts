@@ -72,7 +72,45 @@ export async function compileCode(
     }
 
     // 3. Execute TypeScript check with 90s timeout
-    console.log(`[Compile Sandbox] Running tsc --noEmit in ${sandboxDir}...`);
+    console.log(`[Compile Sandbox] Running TypeScript check in ${sandboxDir}...`);
+
+    // Prefer using the installed `typescript` package programmatically (no external subprocess)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ts = require("typescript");
+
+      const configPath = ts.findConfigFile(sandboxDir, ts.sys.fileExists, "tsconfig.json");
+      if (!configPath) {
+        throw new Error("tsconfig.json not found in sandbox");
+      }
+
+      const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+      const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, path.dirname(configPath));
+
+      const program = ts.createProgram(parsed.fileNames, parsed.options);
+      const emitResult = program.emit();
+      const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+
+      if (diagnostics && diagnostics.length > 0) {
+        const formatted = diagnostics
+          .map((d: any) => {
+            const message = ts.flattenDiagnosticMessageText(d.messageText, "\n");
+            if (d.file && typeof d.start === "number") {
+              const { line, character } = d.file.getLineAndCharacterOfPosition(d.start);
+              return `${d.file.fileName} (${line + 1},${character + 1}): ${message}`;
+            }
+            return message;
+          })
+          .join("\n");
+
+        throw new Error(formatted);
+      }
+
+      return { ok: true, projectDir: sandboxDir };
+    } catch (e) {
+      // If programmatic typescript is not available or fails, fall back to external tsc invocation below
+      console.log("[Compile Sandbox] Programmatic TypeScript check not available or failed, falling back to external tsc:", (e && e.message) || e);
+    }
     // Look for tsc in monorepo root node_modules first, then skeleton, then local typescript bin, then npm/pnpm exec
     const rootTsc = path.resolve(skeletonDir, "../../node_modules/.bin/tsc");
     const rootTscCmd = path.resolve(skeletonDir, "../../node_modules/.bin/tsc.cmd");
