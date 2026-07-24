@@ -17,7 +17,31 @@ export async function renderComposition(
 
   const bundled = await bundle({
     entryPoint,
-    webpackOverride: (config) => config,
+    webpackOverride: (config) => {
+      // Ensure bundler resolves modules from the main project's node_modules
+      config.resolve = config.resolve || {};
+      config.resolve.modules = config.resolve.modules || [];
+      const hostNodeModules = path.join(process.cwd(), "node_modules");
+      if (!config.resolve.modules.includes(hostNodeModules)) {
+        config.resolve.modules.unshift(hostNodeModules);
+      }
+
+      // Alias @remotion/google-fonts to the host installation so subpaths
+      // like '@remotion/google-fonts/Inter' can be resolved when the sandbox
+      // doesn't have its own node_modules installed.
+      // Cast to any because webpack types allow multiple shapes for alias
+      (config.resolve as any).alias = (config.resolve as any).alias || {};
+      try {
+        const googleFontsPath = path.join(process.cwd(), "node_modules", "@remotion", "google-fonts");
+        if (fs.existsSync(googleFontsPath)) {
+          (config.resolve as any).alias["@remotion/google-fonts"] = googleFontsPath;
+        }
+      } catch (e) {
+        // ignore aliasing if it fails
+      }
+
+      return config;
+    },
   });
 
   console.log(`[Render] Bundle created at ${bundled}`);
