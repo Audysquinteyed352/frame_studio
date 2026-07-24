@@ -34,7 +34,9 @@ const nextConfig = {
       config.externals = config.externals || [];
       config.externals.push(
         /@rspack\/binding-.*/,
-        'esbuild'
+        'esbuild',
+        '@remotion/bundler',
+        '@remotion/renderer'
       );
     }
 
