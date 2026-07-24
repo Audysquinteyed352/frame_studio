@@ -4,8 +4,6 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { planFromPrompt, generateCode, fixCode, type Brief, type CodeFileMap } from "pipeline";
-import { compileCode } from "../../../../../workers/render-worker/compile";
-import { renderComposition } from "../../../../../workers/render-worker/render";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,6 +81,7 @@ export async function POST(req: NextRequest) {
 
     // STAGE 3 & 4: COMPILE & FIX LOOP
     console.log(`[Generate] STAGE: Compiling...`);
+    const { compileCode } = await import("../../../../../workers/render-worker/compile");
     let currentCode = { ...code };
     let attempt = 0;
     let compiledProjectDir: string | null = null;
@@ -121,6 +120,7 @@ export async function POST(req: NextRequest) {
 
     // STAGE 5: RENDERING
     console.log(`[Generate] STAGE: Rendering MP4 & Thumbnail...`);
+    const { renderComposition } = await import("../../../../../workers/render-worker/render");
     const renderResult = await renderComposition(compiledProjectDir);
     console.log(`[Generate] Rendering complete. Duration: ${renderResult.durationSeconds}s`);
 
