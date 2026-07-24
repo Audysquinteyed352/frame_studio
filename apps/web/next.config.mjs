@@ -12,6 +12,8 @@ const nextConfig = {
     "@remotion/bundler",
     "@remotion/renderer",
     "remotion",
+    "@rspack/binding",
+    "@rspack/*",
     "@remotion/google-fonts",
     "@remotion/cli",
     "esbuild"
@@ -47,6 +49,22 @@ const nextConfig = {
     // Externalize native modules and heavy packages on server
     if (isServer) {
       config.externals = config.externals || [];
+      // Ensure remotion and rspack native bindings are required at runtime from node_modules
+      const serverExternals = [
+        "@remotion/bundler",
+        "@remotion/renderer",
+        "remotion",
+        "@remotion/google-fonts",
+        "@remotion/cli",
+        "@rspack/binding",
+        "@rspack/core",
+      ];
+
+      for (const ext of serverExternals) {
+        if (!config.externals.includes(ext)) {
+          config.externals.push(ext);
+        }
+      }
     }
 
     return config;
