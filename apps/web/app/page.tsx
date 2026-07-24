@@ -27,8 +27,30 @@ export default function HomePage() {
       setProgressStage("Downloading...");
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to generate video");
+        let errorMessage = `Server error (${res.status})`;
+        const contentType = res.headers.get("Content-Type") || "";
+
+        if (contentType.includes("application/json")) {
+          try {
+            const data = await res.json();
+            errorMessage = data.error || errorMessage;
+          } catch {
+            // ignore invalid JSON
+          }
+        } else {
+          try {
+            const text = await res.text();
+            if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+              errorMessage = `Server error (${res.status}). Check the server logs for details.`;
+            } else if (text.trim()) {
+              errorMessage = text;
+            }
+          } catch {
+            // ignore text parse failures
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       const contentDisposition = res.headers.get("Content-Disposition");

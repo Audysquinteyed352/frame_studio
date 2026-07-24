@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiKey } from "@/lib/apiKey";
 import path from "node:path";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { planFromPrompt, generateCode, fixCode, type Brief, type CodeFileMap } from "pipeline";
 import { compileCode } from "../../../../../workers/render-worker/compile";
@@ -8,7 +9,28 @@ import { renderComposition } from "../../../../../workers/render-worker/render";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const skeletonDir = path.resolve(__dirname, "../../../../../packages/remotion-skeleton");
+
+function resolveSkeletonDir() {
+  const candidates = [
+    path.resolve(process.cwd(), "packages/remotion-skeleton"),
+    path.resolve(process.cwd(), "../packages/remotion-skeleton"),
+    path.resolve(process.cwd(), "../../packages/remotion-skeleton"),
+    path.resolve(process.cwd(), "../../../packages/remotion-skeleton"),
+    path.resolve(__dirname, "../../../../../packages/remotion-skeleton"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `Could not locate packages/remotion-skeleton. Checked: ${candidates.join(", ")}`
+  );
+}
+
+const skeletonDir = resolveSkeletonDir();
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes for render
