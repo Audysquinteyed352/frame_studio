@@ -60,6 +60,23 @@ export async function renderComposition(
         // ignore aliasing if it fails
       }
 
+      // Fix for @remotion/studio-shared resolution in v4.0.x
+      (config.resolve as any).alias = (config.resolve as any).alias || {};
+      (config.resolve as any).browser = (config.resolve as any).browser || {};
+      try {
+        const studioSharedPath = hostNodeModules
+          ? path.join(hostNodeModules, "@remotion", "studio-shared")
+          : path.join(process.cwd(), "node_modules", "@remotion", "studio-shared");
+        if (fs.existsSync(studioSharedPath)) {
+          (config.resolve as any).alias["@remotion/studio-shared"] = studioSharedPath;
+          // Fix browser field issue
+          (config.resolve as any).browser = (config.resolve as any).browser || {};
+          (config.resolve as any).browser["@remotion/studio-shared"] = studioSharedPath;
+        }
+      } catch (e) {
+        // ignore aliasing if it fails
+      }
+
       return config;
     },
   });

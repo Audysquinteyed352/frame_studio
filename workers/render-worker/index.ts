@@ -117,14 +117,21 @@ app.post("/render", async (req, res) => {
     }
 
     const skeletonDir = resolveSkeletonDir();
+    console.log("[Render Worker] Skeleton dir resolved:", skeletonDir);
 
     const { promise, position } = renderQueue.enqueue(async () => {
+      console.log("[Render Worker] Starting compilation...");
       const compileResult = await compileCode(files, skeletonDir);
       if (!compileResult.ok || !compileResult.projectDir) {
+        console.error("[Render Worker] Compilation failed:", compileResult.error);
         throw new Error(compileResult.error || "Compilation failed.");
       }
+      console.log("[Render Worker] Compilation succeeded in:", compileResult.projectDir);
 
-      return renderComposition(compileResult.projectDir);
+      console.log("[Render Worker] Starting rendering...");
+      const renderRes = await renderComposition(compileResult.projectDir);
+      console.log("[Render Worker] Rendering finished successfully.");
+      return renderRes;
     });
 
     const isFirst = position === 1;
