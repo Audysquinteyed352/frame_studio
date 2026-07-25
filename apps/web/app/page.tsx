@@ -11,16 +11,6 @@ import { renderVideoInBrowser } from "@/lib/renderInBrowser";
 
 const SOFT = [0.22, 1, 0.36, 1] as const;
 
-const particles = Array.from({ length: 12 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  size: 2 + Math.random() * 4,
-  delay: Math.random() * 6,
-  duration: 4 + Math.random() * 4,
-  opacity: 0.08 + Math.random() * 0.12,
-}));
-
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(false);
@@ -90,36 +80,6 @@ export default function HomePage() {
 
       {isLoading && <ProgressScreen stage={progressStage} percent={progressPercent} />}
       {preview && <PreviewScreen videoUrl={preview.url} filename={preview.filename} onClose={handleClosePreview} />}
-
-      {/* Floating ambient particles */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden>
-        {particles.map((p) => (
-          <motion.div
-            key={p.id}
-            className="absolute rounded-full"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: p.size,
-              height: p.size,
-              background: p.id % 3 === 0 ? "#0071e3" : p.id % 3 === 1 ? "#bf5af2" : "#34e0a4",
-              opacity: 0,
-            }}
-            animate={{
-              opacity: [0, p.opacity, 0],
-              y: [0, -20 - Math.random() * 20, 0],
-              x: [0, (Math.random() - 0.5) * 30, 0],
-              scale: [1, 1.4, 1],
-            }}
-            transition={{
-              duration: p.duration,
-              delay: p.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
 
       <div className="px-6 py-16 md:py-28 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] relative z-10">
         <div className="w-full max-w-4xl mx-auto space-y-16 text-center">

@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CustomCursor } from "@/components/CustomCursor";
+import { AmbientBackground } from "@/components/AmbientBackground";
 
 export const metadata: Metadata = {
   title: "Frame Studio",
@@ -17,9 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* SF Pro Display — Apple CDN (works on all platforms via CSS font-face) */}
         <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/sf-pro-display" />
-        {/* Instrument Serif + Plus Jakarta Sans + Geist Mono — Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -32,16 +31,7 @@ export default function RootLayout({
         className="relative bg-[#f9f9fb] text-[#1d1d1f] antialiased min-h-screen overflow-x-hidden"
       >
         <CustomCursor />
-        
-        {/* Single ambient glow — top center, fixed */}
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
-        >
-          <div className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-60 animate-ambient-glow"
-            style={{ background: "radial-gradient(ellipse at center, rgba(0,113,227,0.09) 0%, transparent 72%)" }}
-          />
-        </div>
+        <AmbientBackground />
 
         <Header />
         <main className="relative z-10 pt-24 min-h-[calc(100vh-80px)]">
