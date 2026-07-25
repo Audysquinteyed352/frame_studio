@@ -128,11 +128,32 @@ export async function renderVideoInBrowser(
     );
   }
 
+  const rootCode = compiledFiles["Root.tsx"];
+  const compMatch = rootCode?.match(/component\s*=\s*\{(\w+)\}/);
+  const innerCompName = compMatch?.[1];
+
+  let RenderComponent: any = Root;
+
+  if (innerCompName) {
+    if (rootModule[innerCompName]) {
+      RenderComponent = rootModule[innerCompName];
+    } else if (modules[`${innerCompName}.tsx`]) {
+      RenderComponent = modules[`${innerCompName}.tsx`][innerCompName];
+    } else {
+      for (const [key, mod] of Object.entries(modules)) {
+        if (typeof mod === "object" && mod !== null && mod[innerCompName]) {
+          RenderComponent = mod[innerCompName];
+          break;
+        }
+      }
+    }
+  }
+
   onProgress?.({ percent: 5, stage: "Rendering video in browser..." });
 
   const { getBlob } = await renderMediaOnWeb({
     composition: {
-      component: Root,
+      component: RenderComponent,
       durationInFrames: metadata.durationInFrames,
       fps: metadata.fps,
       width: metadata.width,
