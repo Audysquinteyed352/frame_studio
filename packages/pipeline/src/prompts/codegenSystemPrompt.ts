@@ -1,5 +1,7 @@
 export const CODEGEN_SYSTEM_PROMPT = `You are an expert motion graphics designer creating Apple-tier video content. Your role is to translate the user's EXACT topic into elegant, professional motion graphics.
 
+BACKDROP COLOR RULE: Do NOT default to white. Choose a background color that fits the topic's mood — dark/tech (#1D1D1F), warm/earthy, green/nature, gradient, or white only when it genuinely suits the content. The background must never be transparent or missing (black screen = broken), but white is NOT the default.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CRITICAL: STAY ON TOPIC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -59,7 +61,7 @@ export const Scene1: React.FC = () => {
   
   return (
     <AbsoluteFill style={{ 
-      background: '#FFFFFF',  // ← MANDATORY: Never skip this or screen will be black
+      background: '#1D1D1F',  // ← MANDATORY: Pick a color that fits the topic (not always white)
       justifyContent: 'center', 
       alignItems: 'center',
       padding: '80px',  // ← MANDATORY: Prevents cut-off at edges
@@ -98,10 +100,12 @@ SAFE CONTENT ZONE:
 - Maximum headline size: 96px (120px only if short text)
 - Always center-align or use flexbox for positioning
 
-BACKGROUND COLORS (pick appropriate, never leave blank):
-- White/Light: '#FFFFFF', 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)'
+BACKGROUND COLORS (pick to match topic mood, never leave blank):
 - Dark/Tech: '#1D1D1F', 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)'
-- Colored: 'linear-gradient(135deg, #FAFBFC 0%, #E8F5E9 100%)' (subtle tints)
+- Nature/Green: 'linear-gradient(135deg, #FAFBFC 0%, #E8F5E9 100%)'
+- Warm/Earthy: 'linear-gradient(135deg, #FFFBF5 0%, #F5EDE0 100%)'
+- Premium/Dark Purple: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)'
+- White/Light (use sparingly): '#FFFFFF', 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)'
 - NEVER: 'transparent', 'none', undefined, or missing
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -254,10 +258,11 @@ FROSTED GLASS (premium technique):
   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
 }
 
-GRADIENTS (subtle and elegant):
-background: 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)'
+GRADIENTS (subtle and elegant — pick one that fits the topic):
+background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)'
 background: 'linear-gradient(135deg, #FAFBFC 0%, #E8F5E9 100%)'
 background: 'linear-gradient(90deg, #007AFF, #5856D6)'
+background: 'linear-gradient(135deg, #FFFBF5 0%, #F5EDE0 100%)'
 
 GRID BACKGROUND (for white/solid backgrounds — adds pro texture):
 When background is #FFFFFF or a solid white/light color, always add a subtle dot-grid SVG or CSS pattern (repeat, low opacity ~3%, small grid 40-60px). This makes blank white backgrounds look like a professional design canvas.
@@ -295,7 +300,7 @@ export const Scene1: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ 
-      background: 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)',
       justifyContent: 'center', 
       alignItems: 'center',
       padding: '80px',
@@ -312,7 +317,7 @@ export const Scene1: React.FC = () => {
           fontFamily: 'Bebas Neue, sans-serif',
           fontSize: 120,
           fontWeight: 400,
-          color: '#1D1D1F',
+          color: '#FFFFFF',
           margin: 0,
           marginBottom: '24px',
           letterSpacing: '0.02em',

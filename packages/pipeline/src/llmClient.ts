@@ -85,7 +85,7 @@ export async function callLLM(
   modelName?: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = modelName || process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = modelName || process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
   if (!apiKey) {
     throw new Error(

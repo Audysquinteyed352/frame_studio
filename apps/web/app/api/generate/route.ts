@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const skeletonDir = resolveSkeletonDir();
     const body = await req.json();
     const prompt = body.prompt?.trim();
-    const model = body.model?.trim() || "gemini-3.5-flash";
+    const model = body.model?.trim() || "gemini-3.6-flash";
     const clientApiKey = body.apiKey?.trim();
 
     if (!prompt) {
