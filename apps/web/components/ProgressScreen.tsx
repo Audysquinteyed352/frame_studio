@@ -152,7 +152,7 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
               </p>
             </motion.div>
 
-            <div className="mt-4 h-1 bg-black/[0.06] rounded-full overflow-hidden">
+            <div className="mt-4 h-1 bg-black/[0.06] rounded-full overflow-hidden relative">
               {isDone || !percent ? (
                 <motion.div
                   animate={
@@ -165,7 +165,7 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
                       ? { duration: 0.6, ease: SOFT }
                       : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
                   }
-                  className="h-full w-1/2 rounded-full bg-[#0071e3]"
+                  className="h-full w-1/2 rounded-full bg-[#0071e3] absolute top-0 left-0"
                   style={{
                     boxShadow: "0 0 8px rgba(0,113,227,0.3)",
                     ...(isDone ? { backgroundColor: "#34c759" } : {}),
@@ -173,9 +173,10 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
                 />
               ) : (
                 <motion.div
+                  initial={{ width: "0%" }}
                   animate={{ width: `${percent}%` }}
-                  transition={{ duration: 0.3, ease: "linear" }}
-                  className="h-full rounded-full bg-[#0071e3]"
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="h-full rounded-full bg-[#0071e3] absolute top-0 left-0"
                   style={{
                     boxShadow: "0 0 8px rgba(0,113,227,0.3)",
                   }}
