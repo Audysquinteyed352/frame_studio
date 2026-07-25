@@ -31,9 +31,10 @@ function evaluateCjs(code: string, requireFn: (id: string) => any): any {
 }
 
 function createGoogleFontShim(fontName: string): any {
+  const fontFamily = fontName;
   return {
-    loadFont: () => ({ fontFamily: fontName }),
-    fontFamily: fontName,
+    loadFont: () => ({ fontFamily }),
+    fontFamily, // Direct export for compatibility
   };
 }
 
@@ -75,6 +76,7 @@ export async function renderVideoInBrowser(
     }
     if (id.startsWith("@remotion/google-fonts/")) {
       const fontName = id.split("/").pop()!;
+      console.log(`[renderInBrowser] Loading font: ${fontName}`);
       modules[id] = createGoogleFontShim(fontName);
       return id;
     }
