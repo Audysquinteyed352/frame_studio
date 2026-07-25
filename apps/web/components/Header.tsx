@@ -23,11 +23,13 @@ export const Header: React.FC = () => {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-6 z-50 w-[calc(100%-2.5rem)] max-w-4xl rounded-full px-6 py-3 flex items-center justify-between"
+      className="fixed z-50 w-[calc(100%-2.5rem)] max-w-4xl rounded-full flex items-center justify-between"
       style={{
         left: "50%",
         translate: "-50% 0",
+        top: scrolled ? "12px" : "24px",
         fontFamily: "var(--font-display)",
+        padding: scrolled ? "8px 20px" : "12px 24px",
         background: scrolled
           ? "rgba(255,255,255,0.82)"
           : "rgba(255,255,255,0.68)",
@@ -37,11 +39,17 @@ export const Header: React.FC = () => {
         boxShadow: scrolled
           ? "0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 0 rgba(255,255,255,0.9)"
           : "0 4px 16px rgba(0,0,0,0.03), inset 0 1px 0 0 rgba(255,255,255,0.9)",
-        transition: `background 0.4s ${SOFT}, backdrop-filter 0.4s ${SOFT}, box-shadow 0.4s ${SOFT}`,
+        transition: `top 0.4s ${SOFT}, padding 0.4s ${SOFT}, background 0.4s ${SOFT}, backdrop-filter 0.4s ${SOFT}, box-shadow 0.4s ${SOFT}`,
       }}
     >
       <Link href="/" className="flex items-center gap-2 group">
-        <span className="font-semibold text-[15px] tracking-tight text-[#1d1d1f]">
+        <span
+          className="font-semibold tracking-tight text-[#1d1d1f]"
+          style={{
+            fontSize: scrolled ? "13px" : "15px",
+            transition: "font-size 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
           Frame Studio
         </span>
       </Link>
@@ -49,24 +57,52 @@ export const Header: React.FC = () => {
       <nav className="flex items-center gap-1.5">
         <Link
           href="/"
-          className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all duration-200 ${
+          className={`rounded-full text-xs font-medium flex items-center transition-all duration-200 ${
             pathname === "/"
               ? "bg-black/[0.06] text-[#1d1d1f] border border-black/10 shadow-sm"
               : "text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
           }`}
+          style={{
+            padding: scrolled ? "4px 12px" : "6px 16px",
+            transition: "padding 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
         >
-          <Play className="w-3 h-3" style={{ color: "#0071e3" }} strokeWidth={2} />
-          <span>Generator</span>
+          <Play className="w-3 h-3 shrink-0" style={{ color: "#0071e3" }} strokeWidth={2} />
+          <span
+            className="overflow-hidden whitespace-nowrap"
+            style={{
+              maxWidth: scrolled ? "0px" : "60px",
+              opacity: scrolled ? 0 : 1,
+              marginLeft: scrolled ? "0px" : "6px",
+              transition: "max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1), margin-left 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            Generator
+          </span>
         </Link>
 
         <a
           href="https://github.com/programmersd21/frame_studio"
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 py-1.5 rounded-full text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] flex items-center gap-1.5 transition-all duration-200"
+          className="rounded-full text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] flex items-center transition-all duration-200 cursor-pointer"
+          style={{
+            padding: scrolled ? "4px 10px" : "6px 16px",
+            transition: "padding 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
         >
-          <Github className="w-3.5 h-3.5" strokeWidth={1.5} />
-          <span>GitHub</span>
+          <Github className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
+          <span
+            className="overflow-hidden whitespace-nowrap"
+            style={{
+              maxWidth: scrolled ? "0px" : "48px",
+              opacity: scrolled ? 0 : 1,
+              marginLeft: scrolled ? "0px" : "6px",
+              transition: "max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1), margin-left 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            GitHub
+          </span>
         </a>
       </nav>
     </motion.header>

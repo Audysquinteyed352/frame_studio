@@ -8,6 +8,7 @@ const SOFT = [0.22, 1, 0.36, 1] as const;
 interface ProgressScreenProps {
   stage: string;
   percent?: number;
+  onClose?: () => void;
 }
 
 interface Orb {
@@ -29,16 +30,24 @@ function genOrbs(): Orb[] {
   ];
 }
 
-export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
+export const ProgressScreen = ({ stage, percent, onClose }: ProgressScreenProps) => {
   const isDone = percent === 100;
   const orbs = useMemo(() => genOrbs(), []);
+  const [isClosing, setIsClosing] = React.useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose?.();
+    }, 400); // Match animation duration
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{ opacity: isClosing ? 0 : 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5, ease: SOFT }}
+      transition={{ duration: 0.4, ease: SOFT }}
       className="fixed inset-0 z-[999] flex items-center justify-center p-6 overflow-hidden"
       style={{
         background: "rgba(249,249,251,0.65)",
@@ -86,8 +95,12 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
 
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: SOFT }}
+        animate={{ 
+          opacity: isClosing ? 0 : 1, 
+          scale: isClosing ? 0.92 : 1, 
+          y: isClosing ? 20 : 0 
+        }}
+        transition={{ duration: 0.4, ease: SOFT }}
         className="w-full max-w-sm relative"
       >
         <div
@@ -101,6 +114,29 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
               "0 24px 80px rgba(0,0,0,0.07), 0 10px 32px rgba(0,0,0,0.03), 0 1px 0 0 rgba(255,255,255,0.85) inset, 0 0 0 1px rgba(0,0,0,0.04)",
           }}
         >
+          {/* Close button - only show if onClose is provided */}
+          {onClose && (
+            <button
+              onClick={handleClose}
+              className="absolute top-4 right-4 z-10 w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/[0.06] transition-all duration-200 group"
+              aria-label="Close"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                className="text-[#86868b] group-hover:text-[#1d1d1f] transition-colors"
+              >
+                <path
+                  d="M1 1L11 11M1 11L11 1"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          )}
           {/* Frosted top accent line */}
           <div
             className="h-[1px] mx-6"
@@ -165,7 +201,7 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
                       ? { duration: 0.6, ease: SOFT }
                       : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
                   }
-                  className="h-full w-1/2 rounded-full bg-[#0071e3] absolute top-0 left-0"
+                  className="h-full w-1/2 rounded-full bg-[#0071e3]"
                   style={{
                     boxShadow: "0 0 8px rgba(0,113,227,0.3)",
                     ...(isDone ? { backgroundColor: "#34c759" } : {}),
@@ -176,7 +212,7 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
                   initial={{ width: "0%" }}
                   animate={{ width: `${percent}%` }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="h-full rounded-full bg-[#0071e3] absolute top-0 left-0"
+                  className="h-full rounded-full bg-[#0071e3]"
                   style={{
                     boxShadow: "0 0 8px rgba(0,113,227,0.3)",
                   }}

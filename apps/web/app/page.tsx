@@ -80,7 +80,7 @@ export default function HomePage() {
       <Material3Decorations />
       <ApiKeyModal onApiKeySet={() => setApiKeySet(true)} />
 
-      {isLoading && <ProgressScreen stage={progressStage} percent={progressPercent} />}
+      {isLoading && <ProgressScreen stage={progressStage} percent={progressPercent} onClose={() => setIsLoading(false)} />}
       {preview && <PreviewScreen videoUrl={preview.url} filename={preview.filename} onClose={handleClosePreview} />}
 
       <div className="px-6 py-16 md:py-28 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] relative z-10">
