@@ -1,6 +1,7 @@
 import { callLLM } from "./llmClient.js";
 import { CODEGEN_SYSTEM_PROMPT } from "./prompts/codegenSystemPrompt.js";
 import { CodeFileMapSchema, type Brief, type AssetRef, type CodeFileMap } from "./schemas.js";
+import * as ts from "typescript";
 
 const MAX_CODEGEN_RETRIES = 3;
 
@@ -97,34 +98,86 @@ function enforceMainCompositionId(rootContent: string): string {
   return rootContent.replace(/id\s*=\s*"([^"]+)"/, 'id="Main"');
 }
 
+/**
+ * AST-based Composition removal.
+ * Removes all Composition imports and JSX elements from the given TypeScript source.
+ * More reliable than regex since it respects TypeScript syntax.
+ */
 function stripComposition(content: string): string {
-  let cleaned = content;
-
-  // Remove Composition import token from remotion import lines
-  cleaned = cleaned.replace(
-    /import\s*\{([^}]*)\}\s*from\s*["']remotion["']\s*;?\n?/g,
-    (match, group: string) => {
-      const tokens = group.split(",").map((t: string) => t.trim()).filter(Boolean);
-      const filtered = tokens.filter((t: string) => t !== "Composition");
-      if (filtered.length === 0) return "";
-      return `import { ${filtered.join(", ")} } from "remotion";\n`;
-    },
+  const sourceFile = ts.createSourceFile(
+    "temp.tsx",
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
   );
 
-  // Remove self-closing <Composition /> tags
-  // Then fix broken syntax: `() => ;` → `() => null;` and `() => )` → `() => null)`
-  cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "null");
-  // Remove <Composition>...</Composition> blocks (multiline)
-  cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "null");
-  // Fix remaining broken arrow / return patterns after removal
-  cleaned = cleaned.replace(/\(\)\s*=>\s*;/g, "() => null;");
-  cleaned = cleaned.replace(/\(\s*\)\s*=>\s*\)/g, "() => null)");
-  cleaned = cleaned.replace(/return\s*;/g, "return null;");
-  // Remove any remaining standalone Composition references
-  cleaned = cleaned.replace(/,\s*Composition(?=\s*[},])/g, "");
-  cleaned = cleaned.replace(/\bComposition\s*,/g, "");
+  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
+    return (rootNode) => {
+      function visit(node: ts.Node): ts.Node | undefined {
+        // Remove Composition from import declarations
+        if (ts.isImportDeclaration(node)) {
+          const importClause = node.importClause;
+          if (importClause?.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
+            const elements = importClause.namedBindings.elements.filter(
+              (element) => element.name.text !== "Composition"
+            );
 
-  return cleaned;
+            // If no imports remain, remove the entire import statement
+            if (elements.length === 0) {
+              return undefined;
+            }
+
+            // If some imports remain, update the import declaration
+            if (elements.length !== importClause.namedBindings.elements.length) {
+              return ts.factory.updateImportDeclaration(
+                node,
+                node.modifiers,
+                ts.factory.updateImportClause(
+                  importClause,
+                  importClause.isTypeOnly,
+                  importClause.name,
+                  ts.factory.updateNamedImports(importClause.namedBindings, elements)
+                ),
+                node.moduleSpecifier,
+                node.assertClause
+              );
+            }
+          }
+        }
+
+        // Replace <Composition> JSX elements with null
+        if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+          const tagName = ts.isJsxElement(node)
+            ? node.openingElement.tagName
+            : node.tagName;
+
+          if (ts.isIdentifier(tagName) && tagName.text === "Composition") {
+            return ts.factory.createNull();
+          }
+        }
+
+        return ts.visitEachChild(node, visit, context);
+      }
+
+      return ts.visitNode(rootNode, visit) as ts.SourceFile;
+    };
+  };
+
+  const result = ts.transform(sourceFile, [transformer]);
+  const transformedSourceFile = result.transformed[0];
+
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  let output = printer.printFile(transformedSourceFile);
+
+  result.dispose();
+
+  // Post-process: fix any broken syntax patterns that might remain
+  output = output.replace(/\(\)\s*=>\s*;/g, "() => null;");
+  output = output.replace(/\(\s*\)\s*=>\s*\)/g, "() => null)");
+  output = output.replace(/return\s*;/g, "return null;");
+
+  return output;
 }
 
 function sanitizeAllFiles(files: CodeFileMap): CodeFileMap {

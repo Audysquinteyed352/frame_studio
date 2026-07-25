@@ -50,13 +50,48 @@ Scene*.tsx
 - No global state.
 
 CRITICAL — Composition rule (failure crashes the app):
-- The <Composition> component from "remotion" may appear EXACTLY ONCE across the entire project.
-- It may ONLY appear in Root.tsx, as the direct return value of the Root component.
-- <Composition> must NEVER appear in Main.tsx, Scene*.tsx, or any other file.
-- <Composition> must NEVER be rendered inside ANY other component (no nesting).
-- If you place <Composition> in any other location, the app crashes with:
-  "Composition mounted inside another composition" and the user will see a blank screen.
-- Violating this rule is the #1 cause of rendering failures. Do not violate it.
+═══════════════════════════════════════════════════════════
+READ THIS CAREFULLY — VIOLATING THIS IS THE #1 FAILURE MODE
+═══════════════════════════════════════════════════════════
+
+The <Composition> component from "remotion" may appear EXACTLY ONCE across the ENTIRE project.
+
+ONLY allowed location:
+✓ Root.tsx — as the ONLY return statement in the Root component
+✓ Example:
+  export const Root: React.FC = () => {
+    return <Composition id="Main" component={Main} ... />;
+  };
+
+FORBIDDEN in ALL other files:
+✗ Main.tsx — NEVER import or use Composition
+✗ Scene*.tsx — NEVER import or use Composition
+✗ Any helper files — NEVER import or use Composition
+✗ Inside any component that isn't Root — NEVER nest Composition
+
+If you place <Composition> anywhere else, the app WILL crash with:
+  "Composition mounted inside another composition"
+  
+This results in:
+- Black screen for the user
+- Complete rendering failure
+- No video output
+- Wasted time and API credits
+
+DO NOT EVER:
+- Import Composition in Main.tsx
+- Import Composition in Scene files
+- Nest <Composition> inside <Sequence>
+- Nest <Composition> inside <AbsoluteFill>
+- Use multiple <Composition> tags
+- Export Composition from any file except Root.tsx
+
+CORRECT PATTERN:
+Root.tsx → imports Main → Main uses <Sequence> to compose scenes → Scene files are plain React components
+
+REMEMBER: Only Root.tsx can touch Composition. All other files use Sequence, AbsoluteFill, and plain React.
+
+═══════════════════════════════════════════════════════════
 
 Allowed packages
 

@@ -134,7 +134,7 @@ export async function renderVideoInBrowser(
 
   let RenderComponent: any = null;
 
-  // Try to find the inner component declared in <Composition component={X}>
+  // Step 1: Try to find the inner component declared in <Composition component={X}>
   if (innerCompName) {
     if (rootModule[innerCompName]) {
       RenderComponent = rootModule[innerCompName];
@@ -149,27 +149,60 @@ export async function renderVideoInBrowser(
     }
   }
 
-  // Fallback: find ANY exported component that isn't Root and doesn't render Composition
-  if (!RenderComponent || typeof RenderComponent !== "function") {
-    for (const mod of Object.values(modules)) {
+  // Step 2: Validate that RenderComponent doesn't contain Composition
+  if (RenderComponent && typeof RenderComponent === "function") {
+    const fnStr = RenderComponent.toString();
+    // If the component's source contains "Composition", it's unsafe to use
+    if (fnStr.includes("Composition")) {
+      console.warn(`[renderInBrowser] Component ${innerCompName} contains Composition reference, searching for alternative...`);
+      RenderComponent = null;
+    }
+  }
+
+  // Step 3: Fallback - find ANY exported component that isn't Root and doesn't render Composition
+  if (!RenderComponent) {
+    for (const [modulePath, mod] of Object.entries(modules)) {
+      // Skip built-in modules and Root.tsx
+      if (modulePath === "Root.tsx" || !modulePath.endsWith(".tsx")) continue;
+      
       if (typeof mod === "object" && mod !== null) {
         for (const [key, val] of Object.entries(mod)) {
-          if (key !== "Root" && typeof val === "function") {
-            const fnStr = val.toString().slice(0, 500);
-            if (!fnStr.includes("Composition") && !fnStr.includes("createElement")) {
-              RenderComponent = val;
-              break;
-            }
-          }
+          if (key === "Root" || typeof val !== "function") continue;
+          
+          const fnStr = val.toString();
+          // Skip if it contains Composition or createElement with Composition
+          if (fnStr.includes("Composition")) continue;
+          
+          // Found a safe component
+          RenderComponent = val;
+          console.log(`[renderInBrowser] Using fallback component: ${key} from ${modulePath}`);
+          break;
         }
       }
       if (RenderComponent) break;
     }
   }
 
-  // Last resort: a plain placeholder so we never pass Root (which nests Composition)
+  // Step 4: Last resort - create a safe placeholder that never nests Composition
   if (!RenderComponent || typeof RenderComponent !== "function") {
-    RenderComponent = () => React.createElement("div", null, "Render Error");
+    console.warn("[renderInBrowser] No safe component found, using placeholder");
+    RenderComponent = () => React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "#000",
+          color: "#fff",
+          fontSize: "48px",
+          fontFamily: "Inter, sans-serif"
+        }
+      },
+      "Render Error: No valid component found"
+    );
   }
 
   onProgress?.({ percent: 5, stage: "Rendering video in browser..." });
