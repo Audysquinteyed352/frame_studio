@@ -126,9 +126,9 @@ export default function HomePage() {
           {/* Hero */}
           <div className="space-y-6 max-w-3xl mx-auto flex flex-col items-center">
             <Reveal delay={0.1}>
-              <h1 className="text-6xl sm:text-8xl font-semibold tracking-[-0.03em] leading-[0.92]">
+              <h1 className="text-[clamp(2rem,7vw,6rem)] sm:text-7xl md:text-8xl font-semibold tracking-[-0.03em] leading-[0.92]">
                 <span
-                  className="bg-clip-text text-transparent animate-gradient-prominent inline-block"
+                  className="bg-clip-text text-transparent animate-gradient-prominent"
                   style={{
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",

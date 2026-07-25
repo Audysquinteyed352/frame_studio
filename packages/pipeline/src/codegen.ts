@@ -105,11 +105,26 @@ function sanitizeSceneFiles(files: CodeFileMap): CodeFileMap {
       continue;
     }
     let cleaned = content;
+
+    // Remove Composition import token from remotion import lines
+    cleaned = cleaned.replace(
+      /import\s*\{([^}]*)\}\s*from\s*["']remotion["']\s*;?\n?/g,
+      (match, group: string) => {
+        const tokens = group.split(",").map((t: string) => t.trim()).filter(Boolean);
+        const filtered = tokens.filter((t: string) => t !== "Composition");
+        if (filtered.length === 0) return "";
+        return `import { ${filtered.join(", ")} } from "remotion";\n`;
+      },
+    );
+
+    // Remove self-closing <Composition /> tags
     cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "");
+    // Remove <Composition>...</Composition> blocks (multiline)
     cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "");
+    // Remove any remaining standalone Composition references (React.createElement etc.)
     cleaned = cleaned.replace(/,\s*Composition(?=\s*[},])/g, "");
     cleaned = cleaned.replace(/\bComposition\s*,/g, "");
-    cleaned = cleaned.replace(/\bComposition\s+(?=[A-Z])/g, "");
+
     result[filename] = cleaned;
   }
   return result;

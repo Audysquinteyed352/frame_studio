@@ -36,6 +36,7 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
   const [modelOpen, setModelOpen]          = useState(false);
   const [buttonState, setButtonState]      = useState<ButtonState>("idle");
   const [isTyping, setIsTyping]            = useState(false);
+  const [isFocused, setIsFocused]          = useState(false);
   const dropdownRef                        = useRef<HTMLDivElement>(null);
   const typingTimerRef                     = useRef<NodeJS.Timeout>();
   const textareaRef                        = useRef<HTMLTextAreaElement>(null);
@@ -86,14 +87,23 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
           animate={{ opacity: modelOpen ? 1 : 0 }}
         />
 
-        <div
+        <motion.div
+          animate={{
+            scale: isFocused ? 1.012 : 1,
+          }}
+          transition={{
+            duration: 0.45,
+            ease: [0.16, 1, 0.3, 1],
+          }}
           className="relative rounded-2xl p-[1.5px] shadow-xl"
           style={{
             background: modelOpen
               ? "linear-gradient(135deg, rgba(0,113,227,0.25), rgba(94,92,230,0.15))"
               : "linear-gradient(135deg, rgba(0,113,227,0.08), rgba(0,0,0,0.03))",
             transition: "background 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset",
+            boxShadow: isFocused
+              ? "0 12px 48px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.9) inset"
+              : "0 8px 32px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset",
           }}
         >
           <div
@@ -109,6 +119,8 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
                 disabled={isLoading}
                 placeholder="Describe your motion graphics concept…"
                 rows={3}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
                 style={{
                   fontFamily: "var(--font-display)",
                   letterSpacing: "-0.015em",
@@ -214,7 +226,7 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
               <GenerateButton state={buttonState} onClick={handleSubmit} disabled={!prompt.trim()} />
             </div>
           </div>
-        </div>
+        </motion.div>
       </form>
 
       <div className="space-y-2.5">

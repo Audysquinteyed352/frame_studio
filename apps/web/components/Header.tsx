@@ -23,8 +23,10 @@ export const Header: React.FC = () => {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2.5rem)] max-w-4xl rounded-full px-6 py-3 flex items-center justify-between"
+      className="fixed top-6 z-50 w-[calc(100%-2.5rem)] max-w-4xl rounded-full px-6 py-3 flex items-center justify-between"
       style={{
+        left: "50%",
+        translate: "-50% 0",
         fontFamily: "var(--font-display)",
         background: scrolled
           ? "rgba(255,255,255,0.82)"
@@ -47,8 +49,7 @@ export const Header: React.FC = () => {
       <nav className="flex items-center gap-1.5">
         <Link
           href="/"
-          style={{ transition: `all 0.25s ${SOFT}` }}
-          className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 ${
+          className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all duration-200 ${
             pathname === "/"
               ? "bg-black/[0.06] text-[#1d1d1f] border border-black/10 shadow-sm"
               : "text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
@@ -62,8 +63,7 @@ export const Header: React.FC = () => {
           href="https://github.com/programmersd21/frame_studio"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ transition: `all 0.25s ${SOFT}` }}
-          className="px-4 py-1.5 rounded-full text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] flex items-center gap-1.5"
+          className="px-4 py-1.5 rounded-full text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] flex items-center gap-1.5 transition-all duration-200"
         >
           <Github className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span>GitHub</span>
