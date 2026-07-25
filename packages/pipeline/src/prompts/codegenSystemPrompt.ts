@@ -20,11 +20,89 @@ User says: "Create a video about eco-friendly coffee cups"
 NON-NEGOTIABLE RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. WHITE BACKGROUND IS DEFAULT FALLBACK: Use #FFFFFF only when no color preference is implied. If the topic suggests a mood (tech=dark, nature=green, luxury=warm), match it. Never force white when another color fits better.
-2. NO PACKAGE IMPORTS: Only use: react, remotion, react-dom (fonts via CDN)
-3. PREMIUM ROUNDING: Use 12px, 16px, 20px, 24px (NEVER 50% on cards/panels)
-4. 3-5 SCENES MINIMUM: 45-60 frames each (total 200+ frames) — generous pacing, no rushing
-5. VARIED ANIMATIONS: Different entrance styles per scene (fade, slide, scale, rotate)
+1. NO BLACK SCREENS OR EMPTY FRAMES: Every frame must show visible content
+   - ALWAYS set background color (white, gradient, or themed color)
+   - NEVER use transparent or undefined backgrounds
+   - Test: If background is missing, video will show black - THIS IS BROKEN
+   
+2. NO CUT-OFF COMPONENTS: All elements must fit within 1920x1080 canvas
+   - Use padding: 80px or 100px minimum on all sides
+   - Keep content within safe zone (1760x900 inner area)
+   - Text must be fully visible - check maxWidth and positioning
+   - Cards/panels should never exceed viewport bounds
+   
+3. EVERY SCENE MUST RENDER: No empty Sequences or missing components
+   - Each Scene component must return valid JSX with <AbsoluteFill>
+   - Never return null or undefined from scene components
+   - Verify all imports are correct (no typos in component names)
+   
+4. NO PACKAGE IMPORTS: Only use: react, remotion, react-dom (fonts via CDN)
+
+5. PREMIUM ROUNDING: Use 12px, 16px, 20px, 24px (NEVER 50% on cards/panels)
+
+6. 3-5 SCENES MINIMUM: 45-60 frames each (total 200+ frames)
+
+7. VARIED ANIMATIONS: Different entrance styles per scene (fade, slide, scale, rotate)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PREVENT BROKEN VIDEOS (black screens, cut-off content, empty frames)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EVERY SCENE MUST HAVE THIS STRUCTURE (NO EXCEPTIONS):
+
+import React from 'react';
+import {useCurrentFrame, spring, interpolate, AbsoluteFill} from 'remotion';
+
+export const Scene1: React.FC = () => {
+  const frame = useCurrentFrame();
+  const progress = spring({ frame: frame - 5, fps: 30, config: { damping: 20, stiffness: 80 } });
+  
+  return (
+    <AbsoluteFill style={{ 
+      background: '#FFFFFF',  // ← MANDATORY: Never skip this or screen will be black
+      justifyContent: 'center', 
+      alignItems: 'center',
+      padding: '80px',  // ← MANDATORY: Prevents cut-off at edges
+    }}>
+      {/* Your content here */}
+    </AbsoluteFill>
+  );
+};
+
+MANDATORY CHECKS FOR EVERY SCENE:
+✓ Has <AbsoluteFill> as root element (not <div>)
+✓ Has background color set (white, gradient, or themed color)
+✓ Has padding: 80px or more (prevents edge cut-off)
+✓ All text has maxWidth set (prevents overflow)
+✓ Component is exported with exact name matching import
+✓ Returns valid JSX (not null, not undefined)
+
+COMMON MISTAKES THAT CAUSE BLACK SCREENS:
+❌ Missing background property on AbsoluteFill
+❌ Using transparent or 'none' as background
+❌ Forgetting to import AbsoluteFill from 'remotion'
+❌ Using <div> instead of <AbsoluteFill>
+❌ Typo in export name (export const Scene1 but import Scene2)
+
+COMMON MISTAKES THAT CUT OFF CONTENT:
+❌ No padding on AbsoluteFill (content touches edges)
+❌ Text without maxWidth (overflows off screen)
+❌ Large fontSize without checking if it fits (120px+ headlines)
+❌ Positioning elements with negative values
+❌ Cards wider than 1200px without responsive logic
+
+SAFE CONTENT ZONE:
+- Video canvas: 1920x1080
+- Safe zone: 1760x900 (with 80px padding on all sides)
+- Maximum card width: 1200px
+- Maximum headline size: 96px (120px only if short text)
+- Always center-align or use flexbox for positioning
+
+BACKGROUND COLORS (pick appropriate, never leave blank):
+- White/Light: '#FFFFFF', 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)'
+- Dark/Tech: '#1D1D1F', 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)'
+- Colored: 'linear-gradient(135deg, #FAFBFC 0%, #E8F5E9 100%)' (subtle tints)
+- NEVER: 'transparent', 'none', undefined, or missing
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CREATIVE VARIETY (no repetition, no slop)
@@ -182,12 +260,7 @@ background: 'linear-gradient(135deg, #FAFBFC 0%, #E8F5E9 100%)'
 background: 'linear-gradient(90deg, #007AFF, #5856D6)'
 
 GRID BACKGROUND (for white/solid backgrounds — adds pro texture):
-When background is #FFFFFF or a solid white/light color, always add a subtle SVG grid or CSS grid pattern like:
-{
-  backgroundImage: \`url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")`,
-  backgroundRepeat: 'repeat',
-}
-This gives a subtle dot-grid texture that makes blank white backgrounds look like a professional design canvas.
+When background is #FFFFFF or a solid white/light color, always add a subtle dot-grid SVG or CSS pattern (repeat, low opacity ~3%, small grid 40-60px). This makes blank white backgrounds look like a professional design canvas.
 
 COLOR PALETTE:
 - Text primary: #1D1D1F
@@ -402,9 +475,25 @@ OUTPUT FORMAT
 Return ONLY JSON. No markdown, no explanations.
 { "Root.tsx": "...", "Main.tsx": "...", "Scene1.tsx": "...", "Scene2.tsx": "...", "Scene3.tsx": "..." }
 
-Minimum 3 scenes, prefer 4-5 scenes for rich content.
-Each scene must be 50-65 frames — never less than 50 frames per scene.
-Total duration should be 200-300 frames minimum.
-Each scene should be substantial with multiple text elements, staggered animations, and visual details.
-Take your time — slow is premium, rushed is cheap.
+MANDATORY REQUIREMENTS (check before submitting):
+✓ Minimum 3 scenes, prefer 4-5 scenes for rich content
+✓ Each scene: 50-65 frames (NEVER less than 50 frames)
+✓ Total duration: 200-300 frames minimum (Root.tsx durationInFrames)
+✓ Every scene has background color (no black screens)
+✓ Every scene has padding: 80px or more (no cut-off)
+✓ All text has maxWidth to prevent overflow
+✓ Component names match exactly (Scene1 export = Scene1 import)
+✓ All scenes use <AbsoluteFill> as root element
+✓ Each scene uses different font combination
+✓ Staggered animations within scenes (not all at once)
+
+BEFORE SUBMITTING, VERIFY:
+1. Does every AbsoluteFill have a background property? (prevents black screens)
+2. Does every AbsoluteFill have padding? (prevents cut-off edges)
+3. Are all component names spelled correctly and consistently?
+4. Do all scenes return valid JSX (not null)?
+5. Are frame durations generous enough (50-65 each)?
+6. Does total durationInFrames in Root.tsx match sum of all Sequence durations?
+
+If ANY of these checks fail, the video will be broken. Fix before returning JSON.
 `;
