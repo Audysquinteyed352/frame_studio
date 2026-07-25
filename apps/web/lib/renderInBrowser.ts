@@ -54,14 +54,20 @@ export async function renderVideoInBrowser(
 
   function resolveImportPath(id: string): string | null {
     if (modules[id]) return id;
+    if (compiledFiles[id]) return id;
     if (id.startsWith(".")) {
       const relative = id.slice(id.startsWith("./") ? 2 : 1);
       const patterns = [
         `src/${relative}.tsx`,
         `src/${relative}.ts`,
+        `${relative}.tsx`,
+        `${relative}.ts`,
         `src/${relative}/index.tsx`,
         `src/${relative}/index.ts`,
+        `${relative}/index.tsx`,
+        `${relative}/index.ts`,
         `src/${relative}`,
+        relative,
       ];
       for (const p of patterns) {
         if (compiledFiles[p]) return p;
@@ -105,18 +111,18 @@ export async function renderVideoInBrowser(
   onProgress?.({ percent: 0, stage: "Evaluating modules..." });
 
   const sceneFiles = Object.keys(compiledFiles).filter(
-    (f) => f.startsWith("src/") && f !== "src/Root.tsx" && f !== "src/index.ts",
+    (f) => f.endsWith(".tsx") && f !== "Root.tsx" && f !== "index.ts",
   );
   for (const f of sceneFiles) {
     requireModule(f);
   }
 
-  const rootModule = requireModule("src/Root.tsx");
+  const rootModule = requireModule("Root.tsx");
   const Root = rootModule.Root;
 
   if (!Root) {
     throw new Error(
-      "Could not find Root component - ensure src/Root.tsx exports a component named 'Root'",
+      "Could not find Root component - ensure Root.tsx exports a component named 'Root'",
     );
   }
 
