@@ -11,3 +11,5 @@ tmp
 !image.png
 *.jpeg
 *.jpg
+tsconfig.tsbuildinfo
+apps/web/tsconfig.tsbuildinfo
