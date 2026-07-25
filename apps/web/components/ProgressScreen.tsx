@@ -189,33 +189,30 @@ export const ProgressScreen = ({ stage, percent, onClose }: ProgressScreenProps)
             </motion.div>
 
             <div className="mt-4 h-1 bg-black/[0.06] rounded-full overflow-hidden relative">
-              {isDone || !percent ? (
+              {isDone ? (
                 <motion.div
-                  animate={
-                    isDone
-                      ? { width: "100%" }
-                      : { x: ["-100%", "200%"] }
-                  }
-                  transition={
-                    isDone
-                      ? { duration: 0.6, ease: SOFT }
-                      : { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
-                  }
-                  className="h-full w-1/2 rounded-full bg-[#0071e3]"
-                  style={{
-                    boxShadow: "0 0 8px rgba(0,113,227,0.3)",
-                    ...(isDone ? { backgroundColor: "#34c759" } : {}),
-                  }}
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.6, ease: SOFT }}
+                  className="absolute top-0 left-0 h-full rounded-full bg-[#34c759]"
+                  style={{ boxShadow: "0 0 8px rgba(52,199,89,0.3)" }}
                 />
+              ) : !percent ? (
+                <div className="absolute inset-0 flex items-center overflow-hidden">
+                  <motion.div
+                    animate={{ x: ["-100%", "400%"] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="h-full w-1/3 rounded-full bg-[#0071e3]"
+                    style={{ boxShadow: "0 0 8px rgba(0,113,227,0.3)" }}
+                  />
+                </div>
               ) : (
                 <motion.div
                   initial={{ width: "0%" }}
                   animate={{ width: `${percent}%` }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="h-full rounded-full bg-[#0071e3]"
-                  style={{
-                    boxShadow: "0 0 8px rgba(0,113,227,0.3)",
-                  }}
+                  className="absolute top-0 left-0 h-full rounded-full bg-[#0071e3]"
+                  style={{ boxShadow: "0 0 8px rgba(0,113,227,0.3)" }}
                 />
               )}
             </div>
