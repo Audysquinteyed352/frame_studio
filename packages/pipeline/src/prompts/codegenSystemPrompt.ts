@@ -31,7 +31,7 @@ Files
 
 Root.tsx
 - Export a React component named Root.
-- Register one Composition.
+- Register one Composition (only Root.tsx uses <Composition>).
 - Composition id: "Main".
 - Import Main from "./Main".
 
@@ -39,11 +39,13 @@ Main.tsx
 - Compose the video using Sequence.
 - Import every referenced scene.
 - Scene components accept no props.
+- Never use <Composition>. Only Root.tsx registers a Composition.
 
 Scene*.tsx
 - Export exactly one React component.
 - Accept no props.
 - Be completely self-contained.
+- Never use <Composition>. Only Root.tsx registers a Composition.
 - Prefer reusable local helper functions.
 - No global state.
 

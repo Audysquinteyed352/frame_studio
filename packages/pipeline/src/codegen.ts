@@ -97,6 +97,24 @@ function enforceMainCompositionId(rootContent: string): string {
   return rootContent.replace(/id\s*=\s*"([^"]+)"/, 'id="Main"');
 }
 
+function sanitizeSceneFiles(files: CodeFileMap): CodeFileMap {
+  const result: CodeFileMap = {};
+  for (const [filename, content] of Object.entries(files)) {
+    if (filename === "Root.tsx") {
+      result[filename] = content;
+      continue;
+    }
+    let cleaned = content;
+    cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "");
+    cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "");
+    cleaned = cleaned.replace(/,\s*Composition(?=\s*[},])/g, "");
+    cleaned = cleaned.replace(/\bComposition\s*,/g, "");
+    cleaned = cleaned.replace(/\bComposition\s+(?=[A-Z])/g, "");
+    result[filename] = cleaned;
+  }
+  return result;
+}
+
 export async function generateCode(
   brief: Brief,
   assets: AssetRef[] = [],
@@ -132,7 +150,7 @@ export async function generateCode(
         cleanedFiles[cleanKey] = val;
       }
 
-      return ensureRootFile(cleanedFiles, brief);
+      return sanitizeSceneFiles(ensureRootFile(cleanedFiles, brief));
     } catch (parseErr: any) {
       if (attempt < MAX_CODEGEN_RETRIES) {
         console.warn(`[Codegen] Schema validation failed on attempt ${attempt + 1}: ${parseErr.message}`);
