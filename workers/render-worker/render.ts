@@ -21,126 +21,30 @@ export async function renderComposition(
   const bundled = await bundle({
     entryPoint,
     webpackOverride: (config) => {
-      // Ensure bundler resolves modules from the main project's node_modules
       config.resolve = config.resolve || {};
-      config.resolve.modules = config.resolve.modules || [];
-      let currentDir = process.cwd();
-      let hostNodeModules: string | null = null;
-      while (true) {
-        const candidate = path.join(currentDir, "node_modules");
-        if (fs.existsSync(candidate)) {
-          hostNodeModules = candidate;
-          break;
-        }
-        const parent = path.dirname(currentDir);
-        if (parent === currentDir) {
-          break;
-        }
-        currentDir = parent;
-      }
-      if (hostNodeModules && !config.resolve.modules.includes(hostNodeModules)) {
-        // Add host node_modules for pnpm compatibility - this fixes 'node_modules/.pnpm/node_modules' resolution
-        config.resolve.modules.unshift(hostNodeModules);
-        // On platforms like Render.com with pnpm, we need to explicitly allow resolving from pnpm store's hidden node_modules
-        const pnpmNodeModules = path.join(hostNodeModules, ".pnpm", "node_modules");
-        if (fs.existsSync(pnpmNodeModules)) {
-          // Add pnpm hidden node_modules last to avoid conflicts
-          config.resolve.modules.push(pnpmNodeModules);
-        }
-      }
-      // Clean up any duplicate entries
-      config.resolve.modules = Array.from(new Set(config.resolve.modules));
+      config.resolve.alias = config.resolve.alias || {};
 
-      // Alias @remotion/google-fonts to the host installation so subpaths
-      // like '@remotion/google-fonts/Inter' can be resolved when the sandbox
-      // doesn't have its own node_modules installed.
-      // Cast to any because webpack types allow multiple shapes for alias
-      (config.resolve as any).alias = (config.resolve as any).alias || {};
-      try {
-        const googleFontsPath = hostNodeModules
-          ? path.join(hostNodeModules, "@remotion", "google-fonts", "dist", "cjs")
-          : path.join(process.cwd(), "node_modules", "@remotion", "google-fonts", "dist", "cjs");
-        if (fs.existsSync(googleFontsPath)) {
-          (config.resolve as any).alias["@remotion/google-fonts"] = googleFontsPath;
-        }
-      } catch (e) {
-        // ignore aliasing if it fails
-      }
-
-      // Fix for @remotion/studio-shared resolution in v4.0.x
-      (config.resolve as any).alias = (config.resolve as any).alias || {};
-      try {
-        const studioSharedPath = hostNodeModules
-          ? path.join(hostNodeModules, "@remotion", "studio-shared")
-          : path.join(process.cwd(), "node_modules", "@remotion", "studio-shared");
-        if (fs.existsSync(studioSharedPath)) {
-          (config.resolve as any).alias["@remotion/studio-shared"] = studioSharedPath;
-        }
-      } catch (e) {
-        // ignore aliasing if it fails
-      }
-      
-      // Add common aliases for packages that @remotion/studio depends on but might not be in sandbox
-      // This fixes 'Module not found' errors for packages used within @remotion/studio
-      const commonAliases = [
-        // @babel dependencies
-        "@babel/generator",
-        "@babel/traverse", 
-        "@babel/helper-module-imports",
-        "@babel/helper-module-transforms",
-        "@jridgewell/source-map",
-        "@jridgewell/trace-mapping",
-        "@jridgewell/gen-mapping",
-        "@jridgewell/remapping",
-        // Vitest includes
-        "@vitest/expect",
-        "@vitest/expect/dist",
-        "@vitest/runner",
-        "@vitest/runner/utils",
-        "@vitest/snapshot",
-        "@vitest/ui",
-        "@vitest/spy",
-        "@vitest/utils",
-        "@vitest/utils/dist",
-        "@vitest/utils/node",
-        "@vitest/utils/source-map",
-        // Babel helpers for testing
-        "@babel/helper-plugin-utils",
-        "@babel/plugin-syntax-jsx",
-        "@babel/plugin-syntax-typescript",
-      ];
-      
-      for (const pkg of commonAliases) {
+      // Local sandbox resolution handles most things automatically now.
+      // We just ensure common Remotion paths are explicit if they miss.
+      const remotionPkgs = ["remotion", "@remotion/renderer", "@remotion/bundler"];
+      for (const pkg of remotionPkgs) {
         try {
-          // Use require.resolve to find the actual package path, then resolve to its directory
-          const resolvedPath = require.resolve(pkg + "/package.json");
-          const pkgPath = path.dirname(resolvedPath);
-          
-          if (pkgPath && !((config.resolve as any).alias as Record<string, string>)[pkg]) {
-            ((config.resolve as any).alias as Record<string, string>)[pkg] = pkgPath;
-            console.log(`[Render] Aliased ${pkg} to ${pkgPath}`);
-          }
-        } catch (e) {
-          // Fallback to manual resolution if package.json approach fails
-          try {
-            const resolvedPath = require.resolve(pkg);
-            let pkgPath = path.dirname(resolvedPath);
-            // If it's a file deep in the package, we might need to go up
-            while (pkgPath && pkgPath !== "/" && !pkgPath.endsWith(pkg.split("/").pop()!)) {
-                const parent = path.dirname(pkgPath);
-                if (parent === pkgPath) break;
-                pkgPath = parent;
-            }
-
-            if (pkgPath && !((config.resolve as any).alias as Record<string, string>)[pkg]) {
-              ((config.resolve as any).alias as Record<string, string>)[pkg] = pkgPath;
-              console.log(`[Render] Aliased ${pkg} to ${pkgPath} (fallback)`);
-            }
-          } catch (err) {
-            // Silently skip if both fail
-          }
-        }
+          const resolved = path.dirname(require.resolve(pkg + "/package.json"));
+          (config.resolve.alias as any)[pkg] = resolved;
+        } catch (e) {}
       }
+
+      // Alias @remotion/google-fonts for font resolution
+      try {
+        const googleFontsPath = path.dirname(require.resolve("@remotion/google-fonts/package.json"));
+        (config.resolve.alias as any)["@remotion/google-fonts"] = googleFontsPath;
+      } catch (e) {}
+
+      // Fix for @remotion/studio-shared
+      try {
+        const studioSharedPath = path.dirname(require.resolve("@remotion/studio-shared/package.json"));
+        (config.resolve.alias as any)["@remotion/studio-shared"] = studioSharedPath;
+      } catch (e) {}
 
       return config;
     },

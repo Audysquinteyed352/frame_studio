@@ -71,41 +71,20 @@ export async function compileCode(
   }
 
   // 2. Prepare Sandbox Directory
-  const sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), "remotion-sandbox-"));
-  console.log(`[Compile Sandbox] Created temporary sandbox at: ${sandboxDir}`);
+  const localTmpDir = path.join(process.cwd(), "tmp");
+  if (!fs.existsSync(localTmpDir)) {
+    fs.mkdirSync(localTmpDir, { recursive: true });
+  }
+  const sandboxDir = fs.mkdtempSync(path.join(localTmpDir, "sandbox-"));
+  console.log(`[Compile Sandbox] Created local sandbox at: ${sandboxDir}`);
 
   try {
     // Copy base skeleton files into sandbox
     console.log(`[Compile Sandbox] Copying skeleton from ${skeletonDir}...`);
     fs.cpSync(skeletonDir, sandboxDir, { recursive: true });
 
-    const nearestNodeModules =
-      findNearestNodeModules(process.cwd()) || findNearestNodeModules(skeletonDir);
-    const hostNodeModules = nearestNodeModules ?? path.join(process.cwd(), "node_modules");
-    console.log(`[Compile Sandbox] Using host node_modules from: ${hostNodeModules}`);
-    const sandboxNodeModules = path.join(sandboxDir, "node_modules");
-    if (fs.existsSync(hostNodeModules)) {
-      try {
-        if (fs.existsSync(sandboxNodeModules)) {
-          fs.rmSync(sandboxNodeModules, { recursive: true, force: true });
-        }
-        fs.symlinkSync(
-          hostNodeModules,
-          sandboxNodeModules,
-          process.platform === "win32" ? "junction" : "dir"
-        );
-        console.log("[Compile Sandbox] Symlinked sandbox node_modules to host node_modules.");
-      } catch (e) {
-        console.warn(
-          "[Compile Sandbox] Could not symlink host node_modules into sandbox, falling back to vendoring:",
-          (e as any).message || e
-        );
-      }
-    } else {
-      console.warn(
-        `[Compile Sandbox] No host node_modules found from ${process.cwd()} or ${skeletonDir}, skipping symlink.`
-      );
-    }
+    // No symlinking needed! Since the sandbox is a child of the worker folder,
+    // Webpack and Node will naturally find 'node_modules' by walking up.
 
     // Write file map into src/
     const srcDir = path.join(sandboxDir, "src");
