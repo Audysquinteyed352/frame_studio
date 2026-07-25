@@ -2,24 +2,57 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Download, X, Check } from "lucide-react";
+import { Download, X, Check, Cloud } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const SOFT = [0.22, 1, 0.36, 1] as const;
 
 interface PreviewScreenProps {
   videoUrl: string;
   filename: string;
+  prompt?: string;
+  model?: string;
   onClose: () => void;
 }
 
-export const PreviewScreen = ({ videoUrl, filename, onClose }: PreviewScreenProps) => {
+export const PreviewScreen = ({ videoUrl, filename, prompt, model, onClose }: PreviewScreenProps) => {
   const [downloadState, setDownloadState] = React.useState<"idle" | "loading" | "success">("idle");
+  const [saveState, setSaveState] = React.useState<"idle" | "loading" | "saved" | "error">("idle");
   const [isClosing, setIsClosing] = React.useState(false);
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
 
   const handleDownload = (e: React.MouseEvent<HTMLAnchorElement>) => {
     setDownloadState("loading");
     setTimeout(() => setDownloadState("success"), 800);
     setTimeout(() => setDownloadState("idle"), 2400);
+  };
+
+  const handleSave = async () => {
+    setSaveState("loading");
+    try {
+      const res = await fetch(videoUrl);
+      const blob = await res.blob();
+
+      const formData = new FormData();
+      formData.append("video", blob, filename);
+      formData.append("prompt", prompt || "");
+      formData.append("model", model || "");
+
+      const uploadRes = await fetch("/api/videos/save", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Failed to save");
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
   };
 
   const handleClose = () => {
@@ -97,6 +130,40 @@ export const PreviewScreen = ({ videoUrl, filename, onClose }: PreviewScreenProp
             >
               Close
             </button>
+
+            {user && (
+              <motion.button
+                onClick={handleSave}
+                disabled={saveState === "loading" || saveState === "saved"}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative overflow-hidden"
+                style={{
+                  background: saveState === "saved" ? "rgba(52,199,89,0.15)" : saveState === "error" ? "rgba(255,59,48,0.1)" : "rgba(0,113,227,0.1)",
+                  color: saveState === "saved" ? "#34c759" : saveState === "error" ? "#ff3b30" : "#0071e3",
+                }}
+              >
+                {saveState === "loading" ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-[#0071e3]/30 border-t-[#0071e3] rounded-full"
+                  />
+                ) : saveState === "saved" ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    Saved
+                  </>
+                ) : saveState === "error" ? (
+                  <span>Try again</span>
+                ) : (
+                  <>
+                    <Cloud className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    Save
+                  </>
+                )}
+              </motion.button>
+            )}
+
             <motion.a
               href={downloadState === "idle" ? videoUrl : undefined}
               download={downloadState === "idle" ? filename : undefined}

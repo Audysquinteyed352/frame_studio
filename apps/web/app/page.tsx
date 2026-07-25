@@ -17,7 +17,7 @@ export default function HomePage() {
   const [apiKeySet, setApiKeySet] = useState(false);
   const [progressStage, setProgressStage] = useState("");
   const [progressPercent, setProgressPercent] = useState(0);
-  const [preview, setPreview] = useState<{ url: string; filename: string } | null>(null);
+  const [preview, setPreview] = useState<{ url: string; filename: string; prompt?: string; model?: string } | null>(null);
 
   const handleGenerate = async (prompt: string, model: string) => {
     setIsLoading(true);
@@ -59,7 +59,7 @@ export default function HomePage() {
       setIsLoading(false);
       setProgressPercent(0);
       setProgressStage("");
-      setPreview({ url, filename });
+      setPreview({ url, filename, prompt, model });
     } catch (err: any) {
       alert(err.message || "Failed to generate video");
       setIsLoading(false);
@@ -81,7 +81,7 @@ export default function HomePage() {
       <ApiKeyModal onApiKeySet={() => setApiKeySet(true)} />
 
       {isLoading && <ProgressScreen stage={progressStage} percent={progressPercent} onClose={() => setIsLoading(false)} />}
-      {preview && <PreviewScreen videoUrl={preview.url} filename={preview.filename} onClose={handleClosePreview} />}
+      {preview && <PreviewScreen videoUrl={preview.url} filename={preview.filename} prompt={preview.prompt} model={preview.model} onClose={handleClosePreview} />}
 
       <div className="px-6 py-16 md:py-28 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] relative z-10">
         <div className="w-full max-w-4xl mx-auto space-y-16 text-center">

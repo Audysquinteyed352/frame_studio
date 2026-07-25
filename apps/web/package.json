@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@remotion/web-renderer": "^4.0.498",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.8",
     "clsx": "^2.1.1",
     "esbuild": "^0.28.1",
     "framer-motion": "^11.18.0",

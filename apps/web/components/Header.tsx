@@ -2,20 +2,27 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Github, Play } from "lucide-react";
+import { Github, Play, User } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
 
 const SOFT = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
 
   return (
@@ -104,6 +111,30 @@ export const Header: React.FC = () => {
             GitHub
           </span>
         </a>
+
+        <Link
+          href={user ? "/profile" : "/auth/signin"}
+          className="rounded-full text-xs font-medium flex items-center transition-all duration-200"
+          style={{
+            padding: scrolled ? "4px 8px" : "6px 12px",
+            background: user ? "rgba(0,113,227,0.1)" : "transparent",
+            color: user ? "#0071e3" : "#86868b",
+            transition: "padding 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          <User className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
+          <span
+            className="overflow-hidden whitespace-nowrap"
+            style={{
+              maxWidth: scrolled ? "0px" : "52px",
+              opacity: scrolled ? 0 : 1,
+              marginLeft: scrolled ? "0px" : "5px",
+              transition: "max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1), margin-left 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            {user ? "Profile" : "Sign in"}
+          </span>
+        </Link>
       </nav>
     </motion.header>
   );
