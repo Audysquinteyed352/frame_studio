@@ -8,6 +8,7 @@ import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { ProgressScreen } from "@/components/ProgressScreen";
 import { PreviewScreen } from "@/components/PreviewScreen";
 import { renderVideoInBrowser } from "@/lib/renderInBrowser";
+import { Material3Decorations } from "@/components/Material3Decorations";
 
 const SOFT = [0.22, 1, 0.36, 1] as const;
 

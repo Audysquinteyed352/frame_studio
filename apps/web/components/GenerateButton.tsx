@@ -97,14 +97,14 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({ state, onClick, 
               className="text-white"
               initial={{ x: 0, y: 0, rotate: 0, scale: 0.5 }}
               animate={{
-                x: [0, 14, 34],
-                y: [0, -12, -30],
-                rotate: [0, -10, -20],
-                scale: [1, 1.1, 0.3],
-                opacity: [1, 1, 0],
+                x: [0, 60],
+                y: [0, -6],
+                rotate: [0, 5],
+                scale: [1, 0.2],
+                opacity: [1, 0],
               }}
               transition={{
-                duration: 1.6,
+                duration: 1.4,
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
