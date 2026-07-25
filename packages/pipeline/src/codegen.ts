@@ -112,10 +112,15 @@ function stripComposition(content: string): string {
   );
 
   // Remove self-closing <Composition /> tags
-  cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "");
+  // Then fix broken syntax: `() => ;` → `() => null;` and `() => )` → `() => null)`
+  cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "null");
   // Remove <Composition>...</Composition> blocks (multiline)
-  cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "");
-  // Remove any remaining standalone Composition references (React.createElement etc.)
+  cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "null");
+  // Fix remaining broken arrow / return patterns after removal
+  cleaned = cleaned.replace(/\(\)\s*=>\s*;/g, "() => null;");
+  cleaned = cleaned.replace(/\(\s*\)\s*=>\s*\)/g, "() => null)");
+  cleaned = cleaned.replace(/return\s*;/g, "return null;");
+  // Remove any remaining standalone Composition references
   cleaned = cleaned.replace(/,\s*Composition(?=\s*[},])/g, "");
   cleaned = cleaned.replace(/\bComposition\s*,/g, "");
 
@@ -197,9 +202,9 @@ function injectRootComposition(
   );
 };`;
 
-  // Remove any existing Root export
+  // Remove any existing Root export (exact name, not prefix like RootFallback)
   const cleaned = withImport.replace(
-    /export\s+(?:const|function|default)\s+Root[\s\S]*?(?=(?:\nexport|\n\/\/|\n\/\*|\n$|$))/g,
+    /export\s+(?:const|function|default)\s+Root\b[\s\S]*?(?=(?:\nexport|\n\/\/|\n\/\*|\n$|$))/g,
     "",
   ).trimEnd();
 
@@ -227,12 +232,12 @@ function resolveInnerComponent(originalFiles: CodeFileMap, sanitizedFiles: CodeF
     if (m) return m[1];
   }
 
-  // 3. Find the first non-Root, non-background component export from any file
+  // 3. Find the first component declaration (exported or not) from any file
   for (const [filename, content] of Object.entries(sanitizedFiles)) {
     if (!filename.endsWith(".tsx") || filename === "Root.tsx") continue;
-    const exportRegex = /export\s+(?:const|function|default)\s+([A-Z]\w*)/g;
+    const allCompRegex = /(?:export\s+)?(?:const|function|default)\s+([A-Z]\w*)/g;
     let match: RegExpExecArray | null;
-    while ((match = exportRegex.exec(content)) !== null) {
+    while ((match = allCompRegex.exec(content)) !== null) {
       const name = match[1];
       if (!name.toLowerCase().includes("background") && !name.toLowerCase().includes("ambient")) {
         return name;
@@ -247,12 +252,12 @@ function findExistingComponent(
   files: CodeFileMap,
   componentName: string,
 ): { file: string; exportName: string } | null {
-  // Check if componentName exists as an export in any file
   for (const [filename, content] of Object.entries(files)) {
     if (!filename.endsWith(".tsx")) continue;
-    const exportRegex = /export\s+(?:const|function|default)\s+([A-Z]\w*)/g;
+    // Check both exported and non-exported declarations
+    const allCompRegex = /(?:export\s+)?(?:const|function|default)\s+([A-Z]\w*)/g;
     let match: RegExpExecArray | null;
-    while ((match = exportRegex.exec(content)) !== null) {
+    while ((match = allCompRegex.exec(content)) !== null) {
       if (match[1] === componentName) {
         return { file: filename, exportName: componentName };
       }

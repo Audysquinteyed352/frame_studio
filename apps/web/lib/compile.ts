@@ -54,18 +54,27 @@ export async function compileToJs(
 ): Promise<Record<string, string>> {
   const compiled: Record<string, string> = {};
   for (const [filename, code] of Object.entries(files)) {
+    if (typeof code !== "string") {
+      console.warn(`[Compile] Skipping ${filename}: content is ${typeof code}`);
+      continue;
+    }
     if (!filename.endsWith(".ts") && !filename.endsWith(".tsx")) {
       compiled[filename] = code;
       continue;
     }
-    const result = await transform(code, {
-      loader: filename.endsWith(".tsx") ? "tsx" : "ts",
-      format: "cjs",
-      jsx: "automatic",
-      target: "es2020",
-      sourcemap: false,
-    });
-    compiled[filename] = result.code;
+    try {
+      const result = await transform(code, {
+        loader: filename.endsWith(".tsx") ? "tsx" : "ts",
+        format: "cjs",
+        jsx: "automatic",
+        target: "es2020",
+        sourcemap: false,
+      });
+      compiled[filename] = result.code;
+    } catch (transformErr: any) {
+      console.warn(`[Compile] esbuild transform failed for ${filename}: ${transformErr.message}`);
+      throw transformErr;
+    }
   }
   return compiled;
 }
