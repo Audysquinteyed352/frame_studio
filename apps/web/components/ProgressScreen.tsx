@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 
 const SOFT = [0.22, 1, 0.36, 1] as const;
@@ -9,34 +10,105 @@ interface ProgressScreenProps {
   percent?: number;
 }
 
+interface Orb {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delay: number;
+  duration: number;
+  driftX: number;
+  driftY: number;
+}
+
+function genOrbs(): Orb[] {
+  return [
+    { x: 20, y: 30, size: 300, color: "rgba(0,113,227,0.04)", delay: 0, duration: 18, driftX: 8, driftY: -5 },
+    { x: 80, y: 50, size: 250, color: "rgba(191,90,242,0.03)", delay: 3, duration: 22, driftX: -6, driftY: 8 },
+    { x: 50, y: 70, size: 350, color: "rgba(52,224,164,0.03)", delay: 6, duration: 15, driftX: 10, driftY: -3 },
+  ];
+}
+
 export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
   const isDone = percent === 100;
+  const orbs = useMemo(() => genOrbs(), []);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.35, ease: SOFT }}
-      className="fixed inset-0 z-[999] flex items-center justify-center p-6"
+      transition={{ duration: 0.5, ease: SOFT }}
+      className="fixed inset-0 z-[999] flex items-center justify-center p-6 overflow-hidden"
       style={{
-        background: "rgba(249,249,251,0.8)",
-        backdropFilter: "blur(40px)",
+        background: "rgba(249,249,251,0.65)",
+        backdropFilter: "blur(60px) saturate(180%)",
+        WebkitBackdropFilter: "blur(60px) saturate(180%)",
       }}
     >
+      {/* Animated light orbs floating behind the card */}
+      {orbs.map((orb, i) => (
+        <motion.div
+          key={`orb-${i}`}
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            left: `${orb.x}%`,
+            top: `${orb.y}%`,
+            width: orb.size,
+            height: orb.size,
+            marginLeft: -orb.size / 2,
+            marginTop: -orb.size / 2,
+            background: `radial-gradient(ellipse at center, ${orb.color} 0%, transparent 70%)`,
+            filter: "blur(60px)",
+          }}
+          animate={{
+            x: [0, orb.driftX, -orb.driftX * 0.5, 0],
+            y: [0, orb.driftY, -orb.driftY * 0.3, 0],
+            scale: [1, 1.1, 0.95, 1],
+          }}
+          transition={{
+            duration: orb.duration,
+            delay: orb.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+
+      {/* Gradient ambient wash on the overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,113,227,0.03) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 100% 100%, rgba(191,90,242,0.02) 0%, transparent 50%)",
+        }}
+      />
+
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: SOFT }}
-        className="w-full max-w-sm"
+        transition={{ duration: 0.5, ease: SOFT }}
+        className="w-full max-w-sm relative"
       >
         <div
-          className="glass rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-hidden relative"
           style={{
+            background: "rgba(255,255,255,0.78)",
+            backdropFilter: "blur(40px) saturate(200%)",
+            WebkitBackdropFilter: "blur(40px) saturate(200%)",
+            border: "1px solid rgba(255,255,255,0.5)",
             boxShadow:
-              "0 20px 60px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.03), inset 0 1px 0 0 rgba(255,255,255,0.9)",
+              "0 24px 80px rgba(0,0,0,0.07), 0 10px 32px rgba(0,0,0,0.03), 0 1px 0 0 rgba(255,255,255,0.85) inset, 0 0 0 1px rgba(0,0,0,0.04)",
           }}
         >
+          {/* Frosted top accent line */}
+          <div
+            className="h-[1px] mx-6"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)",
+            }}
+          />
+
           <div className="px-6 pt-5 pb-4 flex items-center gap-3">
             <motion.div
               animate={isDone ? { scale: [1, 0] } : { rotate: 360 }}
@@ -119,7 +191,7 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
             )}
           </div>
 
-          <div className="mx-6 h-[1px] bg-black/[0.05]" />
+          <div className="mx-6 h-[1px] bg-black/[0.04]" />
           <div className="px-6 py-3 flex items-center justify-between text-[11px] text-[#86868b] font-mono">
             <span>Status</span>
             <span className="flex items-center gap-1.5">
@@ -129,6 +201,14 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
               {isDone ? "Done" : "Processing"}
             </span>
           </div>
+
+          {/* Bottom frost accent */}
+          <div
+            className="h-[1px] mx-6"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.03), transparent)",
+            }}
+          />
         </div>
       </motion.div>
     </motion.div>

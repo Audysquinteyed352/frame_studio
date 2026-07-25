@@ -1,57 +1,78 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 
-const SHAPES = [
-  { x: 8, y: 12, s: 60, c: "rgba(0,113,227,0.12)", r: 30, delay: 0 },
-  { x: 82, y: 8, s: 40, c: "rgba(191,90,242,0.10)", r: 20, delay: 1.5 },
-  { x: 50, y: 75, s: 80, c: "rgba(52,224,164,0.08)", r: 40, delay: 3 },
-  { x: 25, y: 50, s: 30, c: "rgba(255,159,10,0.10)", r: 15, delay: 0.8 },
-  { x: 70, y: 40, s: 45, c: "rgba(255,45,85,0.09)", r: 22, delay: 2.2 },
-  { x: 15, y: 80, s: 35, c: "rgba(0,113,227,0.10)", r: 18, delay: 4 },
-  { x: 90, y: 60, s: 50, c: "rgba(191,90,242,0.08)", r: 25, delay: 1 },
-  { x: 40, y: 25, s: 25, c: "rgba(52,224,164,0.12)", r: 12, delay: 3.5 },
-  { x: 60, y: 90, s: 35, c: "rgba(255,159,10,0.09)", r: 18, delay: 2 },
-  { x: 35, y: 65, s: 55, c: "rgba(0,113,227,0.07)", r: 28, delay: 5 },
-  { x: 78, y: 30, s: 20, c: "rgba(255,45,85,0.10)", r: 10, delay: 0.5 },
-  { x: 10, y: 35, s: 40, c: "rgba(52,224,164,0.09)", r: 20, delay: 6 },
-];
+interface ShapeAnim {
+  y: number[];
+  x: number[];
+  scale: number[];
+  rotate: number[];
+}
+
+function genShapeAnims(): ShapeAnim[] {
+  return Array.from({ length: 12 }, () => ({
+    y: [0, -12 + Math.random() * 8, 0],
+    x: [0, (Math.random() - 0.5) * 16, 0],
+    scale: [1, 1.08 + Math.random() * 0.06, 1],
+    rotate: [0, (Math.random() - 0.5) * 6, 0],
+  }));
+}
 
 export const Material3Decorations: React.FC = () => {
+  const shapeAnims = useMemo(() => genShapeAnims(), []);
+
+  const SHAPES = [
+    { x: 8, y: 12, s: 60, c: "rgba(0,113,227,0.12)", r: 30, delay: 0 },
+    { x: 82, y: 8, s: 40, c: "rgba(191,90,242,0.10)", r: 20, delay: 1.5 },
+    { x: 50, y: 75, s: 80, c: "rgba(52,224,164,0.08)", r: 40, delay: 3 },
+    { x: 25, y: 50, s: 30, c: "rgba(255,159,10,0.10)", r: 15, delay: 0.8 },
+    { x: 70, y: 40, s: 45, c: "rgba(255,45,85,0.09)", r: 22, delay: 2.2 },
+    { x: 15, y: 80, s: 35, c: "rgba(0,113,227,0.10)", r: 18, delay: 4 },
+    { x: 90, y: 60, s: 50, c: "rgba(191,90,242,0.08)", r: 25, delay: 1 },
+    { x: 40, y: 25, s: 25, c: "rgba(52,224,164,0.12)", r: 12, delay: 3.5 },
+    { x: 60, y: 90, s: 35, c: "rgba(255,159,10,0.09)", r: 18, delay: 2 },
+    { x: 35, y: 65, s: 55, c: "rgba(0,113,227,0.07)", r: 28, delay: 5 },
+    { x: 78, y: 30, s: 20, c: "rgba(255,45,85,0.10)", r: 10, delay: 0.5 },
+    { x: 10, y: 35, s: 40, c: "rgba(52,224,164,0.09)", r: 20, delay: 6 },
+  ];
+
   return (
     <div
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       aria-hidden
     >
-      {SHAPES.map((shape, i) => (
-        <motion.div
-          key={i}
-          className="absolute"
-          style={{
-            left: `${shape.x}%`,
-            top: `${shape.y}%`,
-            width: shape.s,
-            height: shape.s,
-            marginLeft: -shape.s / 2,
-            marginTop: -shape.s / 2,
-            borderRadius: shape.r,
-            background: shape.c,
-          }}
-          animate={{
-            y: [0, -12 + Math.random() * 8, 0],
-            x: [0, (Math.random() - 0.5) * 16, 0],
-            scale: [1, 1.08 + Math.random() * 0.06, 1],
-            rotate: [0, (Math.random() - 0.5) * 6, 0],
-          }}
-          transition={{
-            duration: 8 + Math.random() * 8,
-            delay: shape.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
+      {SHAPES.map((shape, i) => {
+        const anim = shapeAnims[i];
+        return (
+          <motion.div
+            key={i}
+            className="absolute"
+            style={{
+              left: `${shape.x}%`,
+              top: `${shape.y}%`,
+              width: shape.s,
+              height: shape.s,
+              marginLeft: -shape.s / 2,
+              marginTop: -shape.s / 2,
+              borderRadius: shape.r,
+              background: shape.c,
+            }}
+            animate={{
+              y: anim.y,
+              x: anim.x,
+              scale: anim.scale,
+              rotate: anim.rotate,
+            }}
+            transition={{
+              duration: 8 + Math.random() * 8,
+              delay: shape.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        );
+      })}
 
       {/* M3-style cookie shapes (scalloped edges) */}
       {[

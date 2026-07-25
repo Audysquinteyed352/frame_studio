@@ -77,6 +77,7 @@ export default function HomePage() {
 
   return (
     <>
+      <Material3Decorations />
       <ApiKeyModal onApiKeySet={() => setApiKeySet(true)} />
 
       {isLoading && <ProgressScreen stage={progressStage} percent={progressPercent} />}

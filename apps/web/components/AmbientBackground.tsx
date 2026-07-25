@@ -15,6 +15,8 @@ interface Particle {
   duration: number;
   drift: number;
   opacity: number;
+  driftX1: number;
+  driftX2: number;
 }
 
 const COLORS = ["#0071e3", "#bf5af2", "#34e0a4", "#ff9f0a", "#ff2d55", "#ffffff"];
@@ -31,6 +33,8 @@ function generateParticles(count: number): Particle[] {
     duration: 6 + Math.random() * 10,
     drift: 15 + Math.random() * 35,
     opacity: 0.1 + Math.random() * 0.14,
+    driftX1: (Math.random() - 0.5) * 25,
+    driftX2: (Math.random() - 0.5) * 15,
   }));
 }
 
@@ -174,101 +178,60 @@ export const AmbientBackground: React.FC = () => {
       ))}
 
       {/* ── Confetti particles ──────────────────────────── ── */}
-      {particles.map((p) => {
-        const Component = p.shape === "ring" ? "div" : motion.div;
-
-        // Build the particle JSX per shape
-        const particleEl = (() => {
-          switch (p.shape) {
-            case "rect":
-              return (
-                <motion.div
-                  key={`p-${p.id}`}
-                  className="absolute rounded-sm"
-                  style={{
-                    left: `${p.x}%`,
-                    top: `${p.y}%`,
-                    width: p.size * 1.4,
-                    height: p.size * 0.7,
-                    background: p.color,
-                    opacity: 0,
-                  }}
-                  animate={{
-                    opacity: [0, p.opacity, 0],
-                    y: [0, -p.drift, -p.drift * 0.3],
-                    x: [0, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 10],
-                    rotate: [0, 180, 360],
-                  }}
-                  transition={{
-                    duration: p.duration,
-                    delay: p.delay,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              );
-            case "ring":
-              return (
-              <motion.div
-                key={`p-${p.id}`}
-                className="absolute rounded-full"
-                style={{
-                  left: `${p.x}%`,
-                  top: `${p.y}%`,
+      {particles.map((p) => (
+        <motion.div
+          key={`p-${p.id}`}
+          className="absolute"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            borderRadius: p.shape === "rect" ? "2px" : "50%",
+            ...(p.shape === "ring"
+              ? {
                   width: p.size * 2.5,
                   height: p.size * 2.5,
                   marginLeft: -(p.size * 2.5) / 2,
                   marginTop: -(p.size * 2.5) / 2,
                   border: `${p.size * 0.15}px solid ${p.color}`,
-                  opacity: 0,
-                }}
-                animate={{
+                }
+              : {
+                  width: p.shape === "rect" ? p.size * 1.4 : p.size,
+                  height: p.shape === "rect" ? p.size * 0.7 : p.size,
+                  background: p.color,
+                  ...(p.shape === "circle" ? { boxShadow: `0 0 ${p.size * 2}px ${p.color}40` } : {}),
+                }),
+            opacity: 0,
+          }}
+          animate={
+            p.shape === "rect"
+              ? {
                   opacity: [0, p.opacity, 0],
-                  scale: [0.5, 1, 0.5],
-                  y: [0, -p.drift * 0.3, 0],
-                  x: [0, (Math.random() - 0.5) * 15, 0],
-                }}
-                transition={{
-                  duration: p.duration,
-                  delay: p.delay,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-              );
-            default:
-              return (
-                <motion.div
-                  key={`p-${p.id}`}
-                  className="absolute rounded-full"
-                  style={{
-                    left: `${p.x}%`,
-                    top: `${p.y}%`,
-                    width: p.size,
-                    height: p.size,
-                    background: p.color,
-                    opacity: 0,
-                    boxShadow: `0 0 ${p.size * 2}px ${p.color}40`,
-                  }}
-                  animate={{
+                  y: [0, -p.drift, -p.drift * 0.3],
+                  x: [0, p.driftX1, p.driftX2],
+                  rotate: [0, 180, 360],
+                }
+              : p.shape === "ring"
+                ? {
+                    opacity: [0, p.opacity, 0],
+                    scale: [0.5, 1, 0.5],
+                    y: [0, -p.drift * 0.3, 0],
+                    x: [0, p.driftX1 * 0.6, 0],
+                  }
+                : {
                     opacity: [0, p.opacity, 0],
                     y: [0, -p.drift * 0.7, -p.drift * 0.2],
-                    x: [0, (Math.random() - 0.5) * 25, (Math.random() - 0.5) * 10],
+                    x: [0, p.driftX1, p.driftX2],
                     scale: [1, 1.3, 1],
-                  }}
-                  transition={{
-                    duration: p.duration,
-                    delay: p.delay,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              );
+                  }
           }
-        })();
-
-        return particleEl;
-      })}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
 
       {/* ── Grain / noise overlay ───────────────────────── ── */}
       <div

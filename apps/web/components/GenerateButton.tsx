@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Sparkles, Send } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 export type ButtonState = "idle" | "pressing" | "animating" | "loading" | "success";
 
@@ -15,12 +15,14 @@ interface GenerateButtonProps {
 const SOFT = [0.22, 1, 0.36, 1] as const;
 
 export const GenerateButton: React.FC<GenerateButtonProps> = ({ state, onClick, disabled }) => {
-  const isIdle = state === "idle" && !disabled;
-
   return (
     <motion.button
-      animate={state === "pressing" ? "pressing" : state}
-      transition={{ duration: 0.22, ease: SOFT }}
+      animate={
+        state === "pressing" || state === "animating"
+          ? { scale: [1, 1.03, 1] }
+          : state
+      }
+      transition={{ duration: 0.35, ease: SOFT }}
       onClick={onClick}
       disabled={disabled || state !== "idle"}
       style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.01em" }}
@@ -87,29 +89,32 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({ state, onClick, 
         {state === "animating" && (
           <motion.span
             key="animating"
-            initial={{ opacity: 0, scale: 0.4 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.3 }}
-            transition={{ duration: 0.3, ease: SOFT }}
-            className="flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center justify-center relative w-4 h-4"
           >
             <motion.div
-              className="text-white"
-              initial={{ x: 0, y: 0, rotate: 0, scale: 0.5 }}
+              className="absolute inset-0 rounded-full border border-white/30"
+              initial={{ scale: 0.3, opacity: 0.8 }}
               animate={{
-                x: [0, 70],
-                y: [0, -14],
-                rotate: [0, -12],
-                scale: [1.4, 0.1],
-                opacity: [1, 0],
+                scale: [0.3, 2.8],
+                opacity: [0.8, 0],
               }}
               transition={{
-                duration: 0.7,
-                ease: [0.16, 1, 0.3, 1],
+                duration: 0.55,
+                ease: "easeOut",
               }}
-            >
-              <Send className="w-5 h-5" strokeWidth={2} />
-            </motion.div>
+            />
+            <motion.div
+              className="w-1.5 h-1.5 rounded-full bg-white/80"
+              animate={{ scale: [1, 1.6, 1] }}
+              transition={{
+                duration: 0.55,
+                ease: "easeInOut",
+              }}
+            />
           </motion.span>
         )}
       </AnimatePresence>

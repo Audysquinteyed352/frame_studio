@@ -66,7 +66,7 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
     if (e) e.preventDefault();
     if (!prompt.trim() || isLoading) return;
     setButtonState("animating");
-    onGenerate(prompt.trim(), selectedModel);
+    setTimeout(() => onGenerate(prompt.trim(), selectedModel), 500);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
