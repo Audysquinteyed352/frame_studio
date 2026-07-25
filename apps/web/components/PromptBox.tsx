@@ -42,7 +42,7 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
   const textareaRef                        = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setButtonState(isLoading ? "loading" : "idle");
+    if (isLoading) setButtonState("loading");
   }, [isLoading]);
 
   useEffect(() => {
@@ -65,8 +65,8 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!prompt.trim() || isLoading) return;
-    setButtonState("pressing");
-    setTimeout(() => onGenerate(prompt.trim(), selectedModel), 150);
+    setButtonState("animating");
+    setTimeout(() => onGenerate(prompt.trim(), selectedModel), 2400);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
