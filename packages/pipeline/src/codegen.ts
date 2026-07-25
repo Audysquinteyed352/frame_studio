@@ -157,11 +157,16 @@ function extractCompAttrs(content: string): {
   return defs;
 }
 
-function injectRootComposition(files: CodeFileMap): CodeFileMap {
+function injectRootComposition(
+  files: CodeFileMap,
+  componentName: string,
+  durationInFrames: number,
+  fps: number,
+  width: number,
+  height: number,
+): CodeFileMap {
   const rootContent = files["Root.tsx"];
   if (!rootContent) return files;
-
-  const attrs = extractCompAttrs(rootContent);
 
   // Ensure Composition is imported (stripComposition may have removed it)
   const hasCompImport = /import\s*\{[^}]*\bComposition\b[^}]*\}\s*from\s*["']remotion["']/.test(rootContent);
@@ -169,13 +174,11 @@ function injectRootComposition(files: CodeFileMap): CodeFileMap {
   if (!hasCompImport) {
     const hasAnyRemotionImport = /import\s*\{[^}]*\}\s*from\s*["']remotion["']/.test(rootContent);
     if (hasAnyRemotionImport) {
-      // Add Composition to existing remotion import
       withImport = rootContent.replace(
         /(import\s*\{)([^}]*)(\}\s*from\s*["']remotion["'])/,
         "$1Composition, $2$3",
       );
     } else {
-      // No remotion import at all — add one
       withImport = `import { Composition } from "remotion";\n${rootContent}`;
     }
   }
@@ -185,11 +188,11 @@ function injectRootComposition(files: CodeFileMap): CodeFileMap {
   return (
     <Composition
       id="Main"
-      component={${attrs.componentName}}
-      durationInFrames={${attrs.durationInFrames}}
-      fps={${attrs.fps}}
-      width={${attrs.width}}
-      height={${attrs.height}}
+      component={${componentName}}
+      durationInFrames={${durationInFrames}}
+      fps={${fps}}
+      width={${width}}
+      height={${height}}
     />
   );
 };`;
@@ -204,6 +207,58 @@ function injectRootComposition(files: CodeFileMap): CodeFileMap {
     ...files,
     "Root.tsx": cleaned + newRoot,
   };
+}
+
+// Find the best inner component name from all source files.
+// Returns the component used in Root.tsx's <Composition component={X}>,
+// or falls back to the first non-background export from any file.
+function resolveInnerComponent(originalFiles: CodeFileMap, sanitizedFiles: CodeFileMap): string {
+  // 1. Try original Root.tsx for component={X} (pre-sanitized)
+  const origRoot = originalFiles["Root.tsx"];
+  if (origRoot) {
+    const m = origRoot.match(/component\s*=\s*\{(\w+)\}/);
+    if (m) return m[1];
+  }
+
+  // 2. Try sanitized Root.tsx (in case injectRootComposition already set it)
+  const sanRoot = sanitizedFiles["Root.tsx"];
+  if (sanRoot) {
+    const m = sanRoot.match(/component\s*=\s*\{(\w+)\}/);
+    if (m) return m[1];
+  }
+
+  // 3. Find the first non-Root, non-background component export from any file
+  for (const [filename, content] of Object.entries(sanitizedFiles)) {
+    if (!filename.endsWith(".tsx") || filename === "Root.tsx") continue;
+    const exportRegex = /export\s+(?:const|function|default)\s+([A-Z]\w*)/g;
+    let match: RegExpExecArray | null;
+    while ((match = exportRegex.exec(content)) !== null) {
+      const name = match[1];
+      if (!name.toLowerCase().includes("background") && !name.toLowerCase().includes("ambient")) {
+        return name;
+      }
+    }
+  }
+
+  return "Main";
+}
+
+function findExistingComponent(
+  files: CodeFileMap,
+  componentName: string,
+): { file: string; exportName: string } | null {
+  // Check if componentName exists as an export in any file
+  for (const [filename, content] of Object.entries(files)) {
+    if (!filename.endsWith(".tsx")) continue;
+    const exportRegex = /export\s+(?:const|function|default)\s+([A-Z]\w*)/g;
+    let match: RegExpExecArray | null;
+    while ((match = exportRegex.exec(content)) !== null) {
+      if (match[1] === componentName) {
+        return { file: filename, exportName: componentName };
+      }
+    }
+  }
+  return null;
 }
 
 export async function generateCode(
@@ -241,9 +296,27 @@ export async function generateCode(
         cleanedFiles[cleanKey] = val;
       }
 
+      // Extract Composition attrs from ORIGINAL Root.tsx (pre-sanitization).
+      // This preserves the inner component name that sanitization would strip.
+      const origRoot = cleanedFiles["Root.tsx"];
+      const origAttrs = origRoot ? extractCompAttrs(origRoot) : null;
+
       const sanitized = sanitizeAllFiles(cleanedFiles);
       const withRoot = ensureRootFile(sanitized, brief);
-      return injectRootComposition(withRoot);
+
+      // Resolve the best component name — prefer the one from original Root.tsx
+      const innerCompName = resolveInnerComponent(cleanedFiles, withRoot);
+
+      // Verify the resolved component actually exists in the file map
+      const componentExists = findExistingComponent(withRoot, innerCompName);
+      const finalCompName = componentExists ? innerCompName : resolveInnerComponent(withRoot, withRoot);
+
+      const dur = origAttrs?.durationInFrames ?? 90;
+      const f = origAttrs?.fps ?? 30;
+      const w = origAttrs?.width ?? 1920;
+      const h = origAttrs?.height ?? 1080;
+
+      return injectRootComposition(withRoot, finalCompName, dur, f, w, h);
     } catch (parseErr: any) {
       if (attempt < MAX_CODEGEN_RETRIES) {
         console.warn(`[Codegen] Schema validation failed on attempt ${attempt + 1}: ${parseErr.message}`);

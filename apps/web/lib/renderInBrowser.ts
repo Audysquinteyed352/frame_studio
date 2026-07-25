@@ -132,15 +132,15 @@ export async function renderVideoInBrowser(
   const compMatch = rootCode?.match(/component\s*=\s*\{(\w+)\}/);
   const innerCompName = compMatch?.[1];
 
-  let RenderComponent: any = Root;
+  let RenderComponent: any = null;
 
+  // Try to find the inner component declared in <Composition component={X}>
   if (innerCompName) {
     if (rootModule[innerCompName]) {
       RenderComponent = rootModule[innerCompName];
-    } else if (modules[`${innerCompName}.tsx`]) {
-      RenderComponent = modules[`${innerCompName}.tsx`][innerCompName];
     } else {
-      for (const [key, mod] of Object.entries(modules)) {
+      // Search all modules for the named export
+      for (const mod of Object.values(modules)) {
         if (typeof mod === "object" && mod !== null && mod[innerCompName]) {
           RenderComponent = mod[innerCompName];
           break;
@@ -149,15 +149,27 @@ export async function renderVideoInBrowser(
     }
   }
 
-  // Safety check: ensure RenderComponent does not contain a nested Composition
-  // by scanning its source. If it does, fall back to Root directly (which might
-  // itself cause the nested Composition error, but at least we tried).
-  if (RenderComponent !== Root && typeof RenderComponent === "function") {
-    const compSource = RenderComponent.toString();
-    if (compSource.includes("Composition")) {
-      console.warn("[BrowserRender] Inner component contains Composition reference; falling back to Root.");
-      RenderComponent = Root;
+  // Fallback: find ANY exported component that isn't Root and doesn't render Composition
+  if (!RenderComponent || typeof RenderComponent !== "function") {
+    for (const mod of Object.values(modules)) {
+      if (typeof mod === "object" && mod !== null) {
+        for (const [key, val] of Object.entries(mod)) {
+          if (key !== "Root" && typeof val === "function") {
+            const fnStr = val.toString().slice(0, 500);
+            if (!fnStr.includes("Composition") && !fnStr.includes("createElement")) {
+              RenderComponent = val;
+              break;
+            }
+          }
+        }
+      }
+      if (RenderComponent) break;
     }
+  }
+
+  // Last resort: a plain placeholder so we never pass Root (which nests Composition)
+  if (!RenderComponent || typeof RenderComponent !== "function") {
+    RenderComponent = () => React.createElement("div", null, "Render Error");
   }
 
   onProgress?.({ percent: 5, stage: "Rendering video in browser..." });
