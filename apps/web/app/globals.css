@@ -156,6 +156,23 @@
   0%   { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
 }
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%      { transform: translateY(-8px) rotate(1deg); }
+  66%      { transform: translateY(4px) rotate(-0.5deg); }
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.04); }
+}
+@keyframes soft-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(0,113,227,0.15); }
+  50%      { box-shadow: 0 0 24px rgba(0,113,227,0.3); }
+}
+@keyframes slide-up-reveal {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* ── Animation helpers ──────────────────────────────────── */
 .animate-ambient-glow {
@@ -176,6 +193,18 @@
 .animate-gradient-prominent {
   animation: gradient-prominent 4s linear infinite;
 }
+.animate-float {
+  animation: float 6s var(--ease-soft) infinite;
+}
+.animate-breathe {
+  animation: breathe 4s var(--ease-soft) infinite;
+}
+.animate-soft-glow {
+  animation: soft-glow 3s var(--ease-soft) infinite;
+}
+.animate-slide-up-reveal {
+  animation: slide-up-reveal 0.6s var(--ease-expo) both;
+}
 
 /* ── Custom select dropdown open animation ──────────────── */
 select option {
@@ -184,27 +213,7 @@ select option {
   color: #1d1d1f;
 }
 
-/* ── Premium typing effect with motion blur ─────────────── */
-textarea {
-  transition: filter 0.12s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-textarea.typing-active {
-  filter: blur(0.4px);
-  animation: typing-pulse 0.1s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes typing-pulse {
-  0% { 
-    filter: blur(0.4px);
-    transform: translateY(0.5px);
-  }
-  100% { 
-    filter: blur(0px);
-    transform: translateY(0);
-  }
-}
-
+/* ── Textarea placeholder refinement ────────────────────── */
 textarea::placeholder {
   transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }

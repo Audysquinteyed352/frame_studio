@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Reveal } from "@/components/Reveal";
 import { PromptBox } from "@/components/PromptBox";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
@@ -8,15 +9,24 @@ import { ProgressScreen } from "@/components/ProgressScreen";
 import { PreviewScreen } from "@/components/PreviewScreen";
 import { renderVideoInBrowser } from "@/lib/renderInBrowser";
 
+const SOFT = [0.22, 1, 0.36, 1] as const;
+
+const particles = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: 2 + Math.random() * 4,
+  delay: Math.random() * 6,
+  duration: 4 + Math.random() * 4,
+  opacity: 0.08 + Math.random() * 0.12,
+}));
+
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(false);
   const [progressStage, setProgressStage] = useState("");
   const [progressPercent, setProgressPercent] = useState(0);
-  const [preview, setPreview] = useState<{
-    url: string;
-    filename: string;
-  } | null>(null);
+  const [preview, setPreview] = useState<{ url: string; filename: string } | null>(null);
 
   const handleGenerate = async (prompt: string, model: string) => {
     setIsLoading(true);
@@ -33,23 +43,11 @@ export default function HomePage() {
       if (!res.ok) {
         let errorMessage = `Server error (${res.status})`;
         const contentType = res.headers.get("Content-Type") || "";
-
         if (contentType.includes("application/json")) {
-          try {
-            const data = await res.json();
-            errorMessage = data.error || errorMessage;
-          } catch {
-            //
-          }
+          try { const data = await res.json(); errorMessage = data.error || errorMessage; } catch {}
         } else {
-          try {
-            const text = await res.text();
-            if (text.trim()) errorMessage = text;
-          } catch {
-            //
-          }
+          try { const text = await res.text(); if (text.trim()) errorMessage = text; } catch {}
         }
-
         throw new Error(errorMessage);
       }
 
@@ -59,14 +57,10 @@ export default function HomePage() {
       setProgressStage("Rendering in browser...");
       setProgressPercent(5);
 
-      const blob = await renderVideoInBrowser(
-        compiledFiles,
-        metadata,
-        (progress) => {
-          setProgressPercent(progress.percent);
-          setProgressStage(progress.stage);
-        },
-      );
+      const blob = await renderVideoInBrowser(compiledFiles, metadata, (progress) => {
+        setProgressPercent(progress.percent);
+        setProgressStage(progress.stage);
+      });
 
       const url = window.URL.createObjectURL(blob);
       const filename = `frame-studio-${Date.now()}.mp4`;
@@ -93,28 +87,48 @@ export default function HomePage() {
   return (
     <>
       <ApiKeyModal onApiKeySet={() => setApiKeySet(true)} />
-      {isLoading && (
-        <ProgressScreen
-          stage={progressStage}
-          percent={progressPercent}
-        />
-      )}
-      {preview && (
-        <PreviewScreen
-          videoUrl={preview.url}
-          filename={preview.filename}
-          onClose={handleClosePreview}
-        />
-      )}
 
-      <div className="px-6 py-16 md:py-28 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] relative">
+      {isLoading && <ProgressScreen stage={progressStage} percent={progressPercent} />}
+      {preview && <PreviewScreen videoUrl={preview.url} filename={preview.filename} onClose={handleClosePreview} />}
+
+      {/* Floating ambient particles */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden>
+        {particles.map((p) => (
+          <motion.div
+            key={p.id}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: p.size,
+              height: p.size,
+              background: p.id % 3 === 0 ? "#0071e3" : p.id % 3 === 1 ? "#bf5af2" : "#34e0a4",
+              opacity: 0,
+            }}
+            animate={{
+              opacity: [0, p.opacity, 0],
+              y: [0, -20 - Math.random() * 20, 0],
+              x: [0, (Math.random() - 0.5) * 30, 0],
+              scale: [1, 1.4, 1],
+            }}
+            transition={{
+              duration: p.duration,
+              delay: p.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="px-6 py-16 md:py-28 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] relative z-10">
         <div className="w-full max-w-4xl mx-auto space-y-16 text-center">
-          {/* Editorial Headline */}
+          {/* Hero */}
           <div className="space-y-6 max-w-3xl mx-auto flex flex-col items-center">
             <Reveal delay={0.1}>
-              <h1 className="text-6xl sm:text-8xl font-semibold tracking-[-0.02em] leading-[0.95]">
+              <h1 className="text-6xl sm:text-8xl font-semibold tracking-[-0.03em] leading-[0.92]">
                 <span
-                  className="bg-clip-text text-transparent animate-gradient-prominent"
+                  className="bg-clip-text text-transparent animate-gradient-prominent inline-block"
                   style={{
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -126,44 +140,50 @@ export default function HomePage() {
                   Motion graphics
                 </span>
                 <br />
-                <span className="font-serif italic font-semibold text-neutral-900">
+                <span className="font-serif italic font-semibold text-[#1d1d1f]">
                   from a prompt.
                 </span>
               </h1>
             </Reveal>
 
             <Reveal delay={0.2}>
-              <p className="text-lg sm:text-xl text-neutral-600 font-normal leading-relaxed max-w-2xl">
+              <p className="text-lg sm:text-xl text-[#86868b] font-normal leading-relaxed max-w-xl mx-auto">
                 Enterprise-grade video generation powered by Google Gemini.
                 Write a prompt, get production-ready MP4s in seconds.
               </p>
             </Reveal>
 
             <Reveal delay={0.3}>
-              <div className="flex items-center gap-6 text-sm text-neutral-500 pt-2">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="font-medium">No server needed</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="font-medium">Browser-rendered</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="font-medium">Zero infrastructure</span>
-                </div>
-              </div>
+              <motion.div
+                className="flex items-center justify-center gap-5 sm:gap-8 text-sm pt-2"
+                whileHover="hover"
+              >
+                {[
+                  { label: "No server needed", color: "#34c759" },
+                  { label: "Browser-rendered", color: "#0071e3" },
+                  { label: "Zero infrastructure", color: "#bf5af2" },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.label}
+                    className="flex items-center gap-2"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + i * 0.08, ease: SOFT }}
+                  >
+                    <motion.div
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: item.color }}
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 2, delay: i * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <span className="text-[#86868b] font-medium">{item.label}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
             </Reveal>
           </div>
 
-          {/* Input Interface */}
+          {/* Prompt Box */}
           <Reveal delay={0.4}>
             <div className="w-full">
               <PromptBox onGenerate={handleGenerate} isLoading={isLoading} />
