@@ -3,6 +3,9 @@ import { renderMedia, selectComposition } from "@remotion/renderer";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
 
 export interface RenderResult {
   videoBuffer: Buffer;
@@ -108,22 +111,34 @@ export async function renderComposition(
       ];
       
       for (const pkg of commonAliases) {
-        let pkgPath = null;
-        if (hostNodeModules) {
-          const potentialPath = path.join(hostNodeModules, ...pkg.split("/"));
-          if (fs.existsSync(potentialPath)) {
-            pkgPath = potentialPath;
+        try {
+          // Use require.resolve to find the actual package path, then resolve to its directory
+          const resolvedPath = require.resolve(pkg + "/package.json");
+          const pkgPath = path.dirname(resolvedPath);
+          
+          if (pkgPath && !((config.resolve as any).alias as Record<string, string>)[pkg]) {
+            ((config.resolve as any).alias as Record<string, string>)[pkg] = pkgPath;
+            console.log(`[Render] Aliased ${pkg} to ${pkgPath}`);
           }
-        }
-        if (!pkgPath) {
-          // Fallback to main node_modules
-          const potentialPath = path.join(process.cwd(), "node_modules", ...pkg.split("/"));
-          if (fs.existsSync(potentialPath)) {
-            pkgPath = potentialPath;
+        } catch (e) {
+          // Fallback to manual resolution if package.json approach fails
+          try {
+            const resolvedPath = require.resolve(pkg);
+            let pkgPath = path.dirname(resolvedPath);
+            // If it's a file deep in the package, we might need to go up
+            while (pkgPath && pkgPath !== "/" && !pkgPath.endsWith(pkg.split("/").pop()!)) {
+                const parent = path.dirname(pkgPath);
+                if (parent === pkgPath) break;
+                pkgPath = parent;
+            }
+
+            if (pkgPath && !((config.resolve as any).alias as Record<string, string>)[pkg]) {
+              ((config.resolve as any).alias as Record<string, string>)[pkg] = pkgPath;
+              console.log(`[Render] Aliased ${pkg} to ${pkgPath} (fallback)`);
+            }
+          } catch (err) {
+            // Silently skip if both fail
           }
-        }
-        if (pkgPath && !((config.resolve as any).alias as Record<string, string>)[pkg]) {
-          ((config.resolve as any).alias as Record<string, string>)[pkg] = pkgPath;
         }
       }
 
