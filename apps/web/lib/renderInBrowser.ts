@@ -218,9 +218,25 @@ export async function renderVideoInBrowser(
       id: "Main",
     },
     inputProps: {},
+    onProgress: ({ encodedFrames, progress, renderEstimatedTime, doneIn }) => {
+      // Convert 0-1 progress to 5-95%, reserve 95-100% for getBlob()
+      const percent = Math.floor(5 + (progress * 90));
+      
+      if (doneIn !== null) {
+        onProgress?.({ percent: 95, stage: "Finalizing video..." });
+      } else if (encodedFrames !== null) {
+        const remaining = renderEstimatedTime ? ` (${Math.ceil(renderEstimatedTime / 1000)}s remaining)` : '';
+        onProgress?.({ 
+          percent, 
+          stage: `Encoding frame ${encodedFrames}/${metadata.durationInFrames}${remaining}` 
+        });
+      } else {
+        onProgress?.({ percent, stage: "Rendering frames..." });
+      }
+    },
   });
 
-  onProgress?.({ percent: 100, stage: "Downloading..." });
+  onProgress?.({ percent: 100, stage: "Download ready!" });
 
   return getBlob();
 }
