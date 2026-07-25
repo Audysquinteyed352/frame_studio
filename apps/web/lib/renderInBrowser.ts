@@ -92,6 +92,8 @@ export async function renderVideoInBrowser(
       throw new Error(`Module not found: ${id}`);
     }
 
+    if (modules[resolved]) return modules[resolved];
+
     if (evaluated.has(resolved)) {
       return modules[resolved];
     }
