@@ -97,18 +97,18 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({ state, onClick, 
               className="text-white"
               initial={{ x: 0, y: 0, rotate: 0, scale: 0.5 }}
               animate={{
-                x: [0, 60],
-                y: [0, -6],
-                rotate: [0, 5],
-                scale: [1, 0.2],
+                x: [0, 70],
+                y: [0, -14],
+                rotate: [0, -12],
+                scale: [1.4, 0.1],
                 opacity: [1, 0],
               }}
               transition={{
-                duration: 1.4,
+                duration: 0.7,
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
-              <Send className="w-4 h-4" strokeWidth={2} />
+              <Send className="w-5 h-5" strokeWidth={2} />
             </motion.div>
           </motion.span>
         )}

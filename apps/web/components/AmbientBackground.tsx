@@ -30,7 +30,7 @@ function generateParticles(count: number): Particle[] {
     delay: Math.random() * 8,
     duration: 6 + Math.random() * 10,
     drift: 15 + Math.random() * 35,
-    opacity: 0.04 + Math.random() * 0.08,
+    opacity: 0.1 + Math.random() * 0.14,
   }));
 }
 
@@ -209,20 +209,32 @@ export const AmbientBackground: React.FC = () => {
               );
             case "ring":
               return (
-                <div
-                  key={`p-${p.id}`}
-                  className="absolute rounded-full"
-                  style={{
-                    left: `${p.x}%`,
-                    top: `${p.y}%`,
-                    width: p.size * 2.5,
-                    height: p.size * 2.5,
-                    marginLeft: -(p.size * 2.5) / 2,
-                    marginTop: -(p.size * 2.5) / 2,
-                    border: `${p.size * 0.15}px solid ${p.color}`,
-                    opacity: 0,
-                  }}
-                />
+              <motion.div
+                key={`p-${p.id}`}
+                className="absolute rounded-full"
+                style={{
+                  left: `${p.x}%`,
+                  top: `${p.y}%`,
+                  width: p.size * 2.5,
+                  height: p.size * 2.5,
+                  marginLeft: -(p.size * 2.5) / 2,
+                  marginTop: -(p.size * 2.5) / 2,
+                  border: `${p.size * 0.15}px solid ${p.color}`,
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: [0, p.opacity, 0],
+                  scale: [0.5, 1, 0.5],
+                  y: [0, -p.drift * 0.3, 0],
+                  x: [0, (Math.random() - 0.5) * 15, 0],
+                }}
+                transition={{
+                  duration: p.duration,
+                  delay: p.delay,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
               );
             default:
               return (
