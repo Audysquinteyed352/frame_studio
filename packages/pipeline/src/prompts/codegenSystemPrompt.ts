@@ -7,13 +7,11 @@ THREE CRITICAL RULES (violating these = broken video)
 1. ALWAYS WHITE BACKGROUND (unless user says "dark" or "black")
    background: '#FFFFFF'
    
-2. ALWAYS LOAD FONTS LIKE THIS:
-   import {loadFont} from '@remotion/google-fonts/Inter';
-   const {fontFamily} = loadFont();
+2. FONTS ARE LOADED VIA CDN (already available)
+   Just use: fontFamily: 'Inter, sans-serif'
+   Available: Inter, Poppins, Montserrat, Bebas Neue
    
-   Then use: style={{ fontFamily }}
-   
-3. CREATE CONTENT FROM USER'S PROMPT (not about Liquid Glass)
+3. CREATE CONTENT FROM USER'S PROMPT
    User: "AI video" → Make video ABOUT AI, styled nicely
    User: "Product launch" → Make video ABOUT product, styled nicely
 
@@ -23,9 +21,6 @@ COMPLETE EXAMPLE SCENE (copy this pattern)
 
 import React from 'react';
 import {useCurrentFrame, spring, interpolate, AbsoluteFill} from 'remotion';
-import {loadFont} from '@remotion/google-fonts/Inter';
-
-const {fontFamily} = loadFont();
 
 export const Scene1: React.FC = () => {
   const frame = useCurrentFrame();
@@ -42,6 +37,7 @@ export const Scene1: React.FC = () => {
       <div style={{
         background: 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
         borderRadius: '24px',
         padding: '64px',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
@@ -49,7 +45,7 @@ export const Scene1: React.FC = () => {
         transform: \`translateY(\${y}px)\`,
       }}>
         <h1 style={{
-          fontFamily,
+          fontFamily: 'Inter, sans-serif',
           fontSize: 80,
           fontWeight: 700,
           color: '#1D1D1F',
@@ -58,7 +54,7 @@ export const Scene1: React.FC = () => {
           Your Content Here
         </h1>
         <p style={{
-          fontFamily,
+          fontFamily: 'Inter, sans-serif',
           fontSize: 24,
           fontWeight: 400,
           color: '#86868B',
@@ -72,13 +68,15 @@ export const Scene1: React.FC = () => {
 };
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AVAILABLE FONTS (use ONE per file)
+AVAILABLE FONTS (use via fontFamily string)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import {loadFont} from '@remotion/google-fonts/Inter';
-import {loadFont} from '@remotion/google-fonts/Poppins';
-import {loadFont} from '@remotion/google-fonts/Montserrat';
-import {loadFont} from '@remotion/google-fonts/BebasNeue';
+fontFamily: 'Inter, sans-serif'          // Clean, professional (DEFAULT)
+fontFamily: 'Poppins, sans-serif'        // Friendly, rounded
+fontFamily: 'Montserrat, sans-serif'     // Bold, modern
+fontFamily: 'Bebas Neue, sans-serif'     // Display, impact
+
+Always include fallback: , sans-serif
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FILE STRUCTURE
@@ -102,6 +100,6 @@ OUTPUT FORMAT
 Return ONLY JSON. No markdown, no explanations.
 { "Root.tsx": "code", "Main.tsx": "code", "Scene1.tsx": "code" }
 
-Every import must exist. Allowed: react, remotion, @remotion/google-fonts/<Font>
-Forbidden: All other packages.
+Every import must exist. Allowed: react, remotion
+Forbidden: @remotion/google-fonts, all other packages.
 `;

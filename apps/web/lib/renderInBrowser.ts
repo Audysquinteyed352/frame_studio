@@ -30,14 +30,6 @@ function evaluateCjs(code: string, requireFn: (id: string) => any): any {
   return mod.exports;
 }
 
-function createGoogleFontShim(fontName: string): any {
-  const fontFamily = fontName;
-  return {
-    loadFont: () => ({ fontFamily }),
-    fontFamily, // Direct export for compatibility
-  };
-}
-
 export async function renderVideoInBrowser(
   compiledFiles: Record<string, string>,
   metadata: VideoMetadata,
@@ -50,7 +42,6 @@ export async function renderVideoInBrowser(
     react: React,
     "react-dom": ReactDOM,
     "react/jsx-runtime": jsxRuntime,
-    "@remotion/google-fonts": { loadFont: () => ({ fontFamily: "Inter" }) },
   };
 
   function resolveImportPath(id: string): string | null {
@@ -73,12 +64,6 @@ export async function renderVideoInBrowser(
       for (const p of patterns) {
         if (compiledFiles[p]) return p;
       }
-    }
-    if (id.startsWith("@remotion/google-fonts/")) {
-      const fontName = id.split("/").pop()!;
-      console.log(`[renderInBrowser] Loading font: ${fontName}`);
-      modules[id] = createGoogleFontShim(fontName);
-      return id;
     }
     return null;
   }

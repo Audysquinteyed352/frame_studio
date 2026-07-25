@@ -18,7 +18,6 @@ const ALLOWED_IMPORTS = [
   "remotion",
   "react",
   "react-dom",
-  "@remotion/google-fonts",
 ];
 
 export function validateStaticImports(
