@@ -21,25 +21,7 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
-    // Handle .md files
-    config.module.rules.push({
-      test: /\.md$/,
-      type: 'asset/source',
-    });
-
-    // Ignore .node binary files
-    config.module.rules.push({
-      test: /\.node$/,
-      loader: 'node-loader',
-    });
-
-    // Exclude .d.ts files from processing
-    config.module.rules.push({
-      test: /\.d\.ts$/,
-      use: 'ignore-loader',
-    });
-
+  webpack: (config) => {
     return config;
   },
 };

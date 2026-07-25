@@ -163,6 +163,23 @@ function injectRootComposition(files: CodeFileMap): CodeFileMap {
 
   const attrs = extractCompAttrs(rootContent);
 
+  // Ensure Composition is imported (stripComposition may have removed it)
+  const hasCompImport = /import\s*\{[^}]*\bComposition\b[^}]*\}\s*from\s*["']remotion["']/.test(rootContent);
+  let withImport = rootContent;
+  if (!hasCompImport) {
+    const hasAnyRemotionImport = /import\s*\{[^}]*\}\s*from\s*["']remotion["']/.test(rootContent);
+    if (hasAnyRemotionImport) {
+      // Add Composition to existing remotion import
+      withImport = rootContent.replace(
+        /(import\s*\{)([^}]*)(\}\s*from\s*["']remotion["'])/,
+        "$1Composition, $2$3",
+      );
+    } else {
+      // No remotion import at all — add one
+      withImport = `import { Composition } from "remotion";\n${rootContent}`;
+    }
+  }
+
   // Build a minimal Root export with exactly one Composition
   const newRoot = `\n\nexport const Root: React.FC = () => {
   return (
@@ -178,7 +195,7 @@ function injectRootComposition(files: CodeFileMap): CodeFileMap {
 };`;
 
   // Remove any existing Root export
-  const cleaned = rootContent.replace(
+  const cleaned = withImport.replace(
     /export\s+(?:const|function|default)\s+Root[\s\S]*?(?=(?:\nexport|\n\/\/|\n\/\*|\n$|$))/g,
     "",
   ).trimEnd();
