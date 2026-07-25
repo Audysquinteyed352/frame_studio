@@ -97,37 +97,96 @@ function enforceMainCompositionId(rootContent: string): string {
   return rootContent.replace(/id\s*=\s*"([^"]+)"/, 'id="Main"');
 }
 
-function sanitizeSceneFiles(files: CodeFileMap): CodeFileMap {
+function stripComposition(content: string): string {
+  let cleaned = content;
+
+  // Remove Composition import token from remotion import lines
+  cleaned = cleaned.replace(
+    /import\s*\{([^}]*)\}\s*from\s*["']remotion["']\s*;?\n?/g,
+    (match, group: string) => {
+      const tokens = group.split(",").map((t: string) => t.trim()).filter(Boolean);
+      const filtered = tokens.filter((t: string) => t !== "Composition");
+      if (filtered.length === 0) return "";
+      return `import { ${filtered.join(", ")} } from "remotion";\n`;
+    },
+  );
+
+  // Remove self-closing <Composition /> tags
+  cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "");
+  // Remove <Composition>...</Composition> blocks (multiline)
+  cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "");
+  // Remove any remaining standalone Composition references (React.createElement etc.)
+  cleaned = cleaned.replace(/,\s*Composition(?=\s*[},])/g, "");
+  cleaned = cleaned.replace(/\bComposition\s*,/g, "");
+
+  return cleaned;
+}
+
+function sanitizeAllFiles(files: CodeFileMap): CodeFileMap {
   const result: CodeFileMap = {};
   for (const [filename, content] of Object.entries(files)) {
-    if (filename === "Root.tsx") {
-      result[filename] = content;
-      continue;
-    }
-    let cleaned = content;
-
-    // Remove Composition import token from remotion import lines
-    cleaned = cleaned.replace(
-      /import\s*\{([^}]*)\}\s*from\s*["']remotion["']\s*;?\n?/g,
-      (match, group: string) => {
-        const tokens = group.split(",").map((t: string) => t.trim()).filter(Boolean);
-        const filtered = tokens.filter((t: string) => t !== "Composition");
-        if (filtered.length === 0) return "";
-        return `import { ${filtered.join(", ")} } from "remotion";\n`;
-      },
-    );
-
-    // Remove self-closing <Composition /> tags
-    cleaned = cleaned.replace(/<Composition\b[^>]*\/>/g, "");
-    // Remove <Composition>...</Composition> blocks (multiline)
-    cleaned = cleaned.replace(/<Composition\b[^>]*>[\s\S]*?<\/Composition>/g, "");
-    // Remove any remaining standalone Composition references (React.createElement etc.)
-    cleaned = cleaned.replace(/,\s*Composition(?=\s*[},])/g, "");
-    cleaned = cleaned.replace(/\bComposition\s*,/g, "");
-
-    result[filename] = cleaned;
+    result[filename] = stripComposition(content);
   }
   return result;
+}
+
+function extractCompAttrs(content: string): {
+  componentName: string;
+  durationInFrames: number;
+  fps: number;
+  width: number;
+  height: number;
+} {
+  const defs = { componentName: "Main", durationInFrames: 90, fps: 30, width: 1920, height: 1080 };
+
+  const compName = content.match(/component\s*=\s*\{(\w+)\}/);
+  if (compName) defs.componentName = compName[1];
+
+  const dur = content.match(/durationInFrames\s*=\s*\{(\d+)\}/);
+  if (dur) defs.durationInFrames = Number(dur[1]);
+
+  const f = content.match(/fps\s*=\s*\{(\d+)\}/);
+  if (f) defs.fps = Number(f[1]);
+
+  const w = content.match(/width\s*=\s*\{(\d+)\}/);
+  if (w) defs.width = Number(w[1]);
+
+  const h = content.match(/height\s*=\s*\{(\d+)\}/);
+  if (h) defs.height = Number(h[1]);
+
+  return defs;
+}
+
+function injectRootComposition(files: CodeFileMap): CodeFileMap {
+  const rootContent = files["Root.tsx"];
+  if (!rootContent) return files;
+
+  const attrs = extractCompAttrs(rootContent);
+
+  // Build a minimal Root export with exactly one Composition
+  const newRoot = `\n\nexport const Root: React.FC = () => {
+  return (
+    <Composition
+      id="Main"
+      component={${attrs.componentName}}
+      durationInFrames={${attrs.durationInFrames}}
+      fps={${attrs.fps}}
+      width={${attrs.width}}
+      height={${attrs.height}}
+    />
+  );
+};`;
+
+  // Remove any existing Root export
+  const cleaned = rootContent.replace(
+    /export\s+(?:const|function|default)\s+Root[\s\S]*?(?=(?:\nexport|\n\/\/|\n\/\*|\n$|$))/g,
+    "",
+  ).trimEnd();
+
+  return {
+    ...files,
+    "Root.tsx": cleaned + newRoot,
+  };
 }
 
 export async function generateCode(
@@ -165,7 +224,9 @@ export async function generateCode(
         cleanedFiles[cleanKey] = val;
       }
 
-      return sanitizeSceneFiles(ensureRootFile(cleanedFiles, brief));
+      const sanitized = sanitizeAllFiles(cleanedFiles);
+      const withRoot = ensureRootFile(sanitized, brief);
+      return injectRootComposition(withRoot);
     } catch (parseErr: any) {
       if (attempt < MAX_CODEGEN_RETRIES) {
         console.warn(`[Codegen] Schema validation failed on attempt ${attempt + 1}: ${parseErr.message}`);

@@ -149,6 +149,17 @@ export async function renderVideoInBrowser(
     }
   }
 
+  // Safety check: ensure RenderComponent does not contain a nested Composition
+  // by scanning its source. If it does, fall back to Root directly (which might
+  // itself cause the nested Composition error, but at least we tried).
+  if (RenderComponent !== Root && typeof RenderComponent === "function") {
+    const compSource = RenderComponent.toString();
+    if (compSource.includes("Composition")) {
+      console.warn("[BrowserRender] Inner component contains Composition reference; falling back to Root.");
+      RenderComponent = Root;
+    }
+  }
+
   onProgress?.({ percent: 5, stage: "Rendering video in browser..." });
 
   const { getBlob } = await renderMediaOnWeb({

@@ -28,6 +28,9 @@ RULES:
 
 6. STRUCTURE:
    - Ensure Root.tsx exports Root: React.FC and registers <Composition id="Main" ... />
+   - The <Composition> must appear EXACTLY ONCE, only in Root.tsx, as Root's direct return.
+   - STRICT: Main.tsx and Scene*.tsx must NEVER contain <Composition>.
+   - Violating this crashes the app with: "Composition mounted inside another composition"
    - Ensure Main.tsx exists and sequences all scenes
    - Every imported file must be included in your JSON output
 

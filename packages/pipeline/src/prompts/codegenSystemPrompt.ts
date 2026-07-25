@@ -31,23 +31,32 @@ Files
 
 Root.tsx
 - Export a React component named Root.
-- Register one Composition (only Root.tsx uses <Composition>).
-- Composition id: "Main".
-- Import Main from "./Main".
+- Register exactly one <Composition id="Main" ... />.
+- The <Composition> must be the ONLY element in Root's return statement.
+- Import Main from "./Main" and pass component={Main}.
 
 Main.tsx
 - Compose the video using Sequence.
 - Import every referenced scene.
 - Scene components accept no props.
-- Never use <Composition>. Only Root.tsx registers a Composition.
+- STRICT: NEVER use <Composition>. ONLY Root.tsx may contain <Composition>.
 
 Scene*.tsx
 - Export exactly one React component.
 - Accept no props.
 - Be completely self-contained.
-- Never use <Composition>. Only Root.tsx registers a Composition.
+- STRICT: NEVER use <Composition>. ONLY Root.tsx may contain <Composition>.
 - Prefer reusable local helper functions.
 - No global state.
+
+CRITICAL — Composition rule (failure crashes the app):
+- The <Composition> component from "remotion" may appear EXACTLY ONCE across the entire project.
+- It may ONLY appear in Root.tsx, as the direct return value of the Root component.
+- <Composition> must NEVER appear in Main.tsx, Scene*.tsx, or any other file.
+- <Composition> must NEVER be rendered inside ANY other component (no nesting).
+- If you place <Composition> in any other location, the app crashes with:
+  "Composition mounted inside another composition" and the user will see a blank screen.
+- Violating this rule is the #1 cause of rendering failures. Do not violate it.
 
 Allowed packages
 
