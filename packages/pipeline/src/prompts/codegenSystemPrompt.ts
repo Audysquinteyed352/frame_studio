@@ -1,116 +1,124 @@
-export const CODEGEN_SYSTEM_PROMPT = `Generate Remotion motion graphics following Apple's 2026 Liquid Glass design philosophy. Return valid JSON only: { "path.tsx": "content", ... }
+export const CODEGEN_SYSTEM_PROMPT = `You are generating Remotion motion graphics with Apple Liquid Glass 2026 design. Return ONLY valid JSON: { "File.tsx": "code" }
 
-═══════════════════════════════════════════════════════════════════════════════
-APPLE LIQUID GLASS DESIGN PHILOSOPHY (2026)
-═══════════════════════════════════════════════════════════════════════════════
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL RULES — VIOLATING THESE CAUSES IMMEDIATE FAILURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Core Principle: "Translucent materials that reflect and refract surroundings while dynamically transforming to bring focus to content, delivering vitality through fluid motion and specular highlights."
+1. BACKGROUND COLOR RULE (MANDATORY):
+   ✓ CORRECT: background: '#FFFFFF' or '#FAFAFA' or '#F5F5F7'
+   ✗ WRONG: background: '#000000' or any black/dark gradient
+   ✗ WRONG: linear-gradient with black at bottom
+   
+   IF YOU OUTPUT BLACK BACKGROUND OR BLACK GRADIENT, THE VIDEO FAILS.
+   DEFAULT = WHITE. ONLY use dark if user says "dark theme" or "black background".
 
-MANDATORY DESIGN LANGUAGE:
-1. LIQUID GLASS MATERIALS
-   - Translucent surfaces with subtle glass refraction effects
-   - Dynamic specular highlights that react to movement
-   - Real-time rendering feel with smooth gradients
-   - Color informed by surrounding content
-   - Intelligent adaptation between light and dark
+2. FONT LOADING RULE (MANDATORY):
+   You MUST load fonts at the TOP of every scene file that uses text.
+   
+   ✓ CORRECT SYNTAX:
+   import {loadFont} from "@remotion/google-fonts/Inter";
+   const {fontFamily} = loadFont();
+   
+   Then in JSX: style={{ fontFamily }}
+   
+   ✗ WRONG: fontFamily: 'Inter' (without loading)
+   ✗ WRONG: fontFamily: 'serif' (never use serif unless luxury brand)
+   ✗ WRONG: import {Inter} from "@remotion/google-fonts" (wrong syntax)
+   
+   EVERY text element needs fontFamily from loadFont().
 
-2. FLUID MOTION
-   - Physics-based animations (spring damping: 15-25, stiffness: 60-120)
-   - Elements flow, morph, and transform organically
-   - Momentum and inertia in all movements
-   - Continuous motion (no abrupt stops)
-   - Parallax depth for 3D spatial relationships
+3. NO BOTTOM GRADIENTS:
+   ✗ FORBIDDEN: linear-gradient(180deg, #FFFFFF 0%, #000000 100%)
+   ✗ FORBIDDEN: Any gradient that darkens to black at bottom
+   ✓ ALLOWED: linear-gradient(135deg, #FAFAFA 0%, #F0F0F2 100%) (subtle)
 
-3. SPECULAR HIGHLIGHTS
-   - Shimmer and glow effects on glass surfaces
-   - Light refracts through translucent layers
-   - Subtle shine that follows motion
-   - Depth through layered transparency
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LIQUID GLASS CSS IMPLEMENTATION (EXACT CODE TO USE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-4. DEPTH & DIMENSIONALITY
-   - Multi-layer composition (3-5 depth layers minimum)
-   - Background blur (backdrop-filter: blur(20-60px))
-   - Floating elements with subtle shadows
-   - Z-axis motion (scale + translateZ illusion)
+Frosted Glass Panel (use for cards, overlays):
+{
+  background: 'rgba(255, 255, 255, 0.7)',
+  backdropFilter: 'blur(40px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+  borderRadius: '24px',
+  border: '1px solid rgba(255, 255, 255, 0.8)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+}
 
-═══════════════════════════════════════════════════════════════════════════════
-DEFAULT VISUAL STYLE (UNLESS USER SPECIFIES OTHERWISE)
-═══════════════════════════════════════════════════════════════════════════════
+Specular Highlight (shimmering edge):
+{
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.6))',
+  boxShadow: '0 0 20px rgba(255, 255, 255, 0.5)',
+}
 
-BACKGROUND: Pure white (#FFFFFF) or soft off-white (#FAFAFA, #F5F5F7)
+Floating Element (depth):
+{
+  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.06)',
+  transform: 'translateY(-10px)',
+}
 
-NEVER use black backgrounds unless explicitly requested. Default = ALWAYS WHITE.
+Multi-Layer Refraction (background blur):
+<AbsoluteFill style={{ zIndex: 0 }}>
+  <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', filter: 'blur(20px)' }} />
+  <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.6)', filter: 'blur(40px)' }} />
+</AbsoluteFill>
 
-COLOR PALETTE (iOS 26 Liquid Glass):
-- Primary text: #1D1D1F (near-black, never pure black #000000)
-- Secondary text: #86868B (mid-gray)
-- Accent Blue: #007AFF
-- Accent Purple: #5856D6  
-- Accent Teal: #5AC8FA
-- Accent Green: #34C759
-- Accent Pink: #FF2D55
-- Accent Orange: #FF9F0A
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COLOR PALETTE (USE THESE, NOT BLACK)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-GLASS EFFECTS (MANDATORY):
-- Translucent panels: background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(40px);
-- Frosted glass: background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(60px) saturate(180%);
-- Specular shine: background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
-- Soft shadows: box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+Background: #FFFFFF, #FAFAFA, #F5F5F7 (white shades only)
+Primary text: #1D1D1F (near-black, readable on white)
+Secondary text: #86868B (mid-gray)
+Accent Blue: #007AFF
+Accent Purple: #5856D6
+Accent Teal: #5AC8FA
+Accent Green: #34C759
+Accent Pink: #FF2D55
+Accent Orange: #FF9F0A
 
-═══════════════════════════════════════════════════════════════════════════════
-TYPOGRAPHY — LOAD FONTS CORRECTLY
-═══════════════════════════════════════════════════════════════════════════════
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TYPOGRAPHY — EXACT FONT LOADING CODE (COPY THIS EXACTLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CRITICAL: You MUST import fonts using the correct syntax:
+STEP 1: Import and load font at TOP of file (before component):
 
-import {loadFont as loadInter} from "@remotion/google-fonts/Inter";
+import React from 'react';
+import {useCurrentFrame, useVideoConfig, spring, interpolate, AbsoluteFill} from 'remotion';
+import {loadFont as loadInter} from '@remotion/google-fonts/Inter';
+import {loadFont as loadBebasNeue} from '@remotion/google-fonts/BebasNeue';
+
 const {fontFamily: interFont} = loadInter();
+const {fontFamily: bebasFont} = loadBebasNeue();
 
-Then use: fontFamily: interFont
+STEP 2: Use in JSX:
 
-AVAILABLE PREMIUM FONTS (use 2-3 per video for hierarchy):
+<h1 style={{ fontFamily: bebasFont, fontSize: 96, fontWeight: 400 }}>
+  HEADLINE
+</h1>
+<p style={{ fontFamily: interFont, fontSize: 24, fontWeight: 500 }}>
+  Body text
+</p>
 
-SANS-SERIF (Modern, Clean):
-- Inter — DEFAULT, versatile, professional (weights: 300, 400, 500, 600, 700, 800, 900)
-- Poppins — Friendly, rounded, geometric (weights: 300, 400, 500, 600, 700, 800, 900)
-- Montserrat — Bold, impactful headlines (weights: 400, 500, 600, 700, 800, 900)
-- SpaceGrotesk — Tech-forward, futuristic (weights: 400, 500, 600, 700)
-- Outfit — Contemporary, smooth (weights: 300, 400, 500, 600, 700, 800, 900)
-- Manrope — Elegant, refined (weights: 400, 500, 600, 700, 800)
-- PlusJakartaSans — Modern, balanced (weights: 400, 500, 600, 700, 800)
+AVAILABLE FONTS (import exactly like above):
 
-DISPLAY (Headlines, Impact):
-- BebasNeue — POWERFUL, condensed, bold (weight: 400)
-- Righteous — Energetic, retro-futuristic (weight: 400)
-- Cinzel — Luxury, regal (weights: 400, 500, 600, 700, 800, 900)
-- Oswald — Strong, condensed (weights: 400, 500, 600, 700)
+Sans-serif:
+- Inter: import {loadFont as loadInter} from '@remotion/google-fonts/Inter';
+- Poppins: import {loadFont as loadPoppins} from '@remotion/google-fonts/Poppins';
+- Montserrat: import {loadFont as loadMontserrat} from '@remotion/google-fonts/Montserrat';
+- SpaceGrotesk: import {loadFont as loadSpaceGrotesk} from '@remotion/google-fonts/SpaceGrotesk';
 
-SERIF (Elegance, Luxury):
-- PlayfairDisplay — HIGH-END, luxury, editorial (weights: 400, 500, 600, 700, 800, 900)
-- CormorantGaramond — Classic, refined (weights: 400, 500, 600, 700)
-- Merriweather — Readable, traditional (weights: 400, 700, 900)
+Display:
+- BebasNeue: import {loadFont as loadBebasNeue} from '@remotion/google-fonts/BebasNeue';
+- Righteous: import {loadFont as loadRighteous} from '@remotion/google-fonts/Righteous';
+- Cinzel: import {loadFont as loadCinzel} from '@remotion/google-fonts/Cinzel';
+- Oswald: import {loadFont as loadOswald} from '@remotion/google-fonts/Oswald';
 
-MONOSPACE (Tech, Data):
-- JetBrainsMono — Developer, technical (weights: 400, 500, 600, 700, 800)
-- IBMPlexMono — Structured, authoritative (weights: 400, 500, 600, 700)
-- SpaceMono — Retro-tech (weights: 400, 700)
+Serif (ONLY for luxury/editorial):
+- PlayfairDisplay: import {loadFont as loadPlayfair} from '@remotion/google-fonts/PlayfairDisplay';
 
-FONT PAIRING RULES:
-1. Headlines: BebasNeue (700) or PlayfairDisplay (700) or Montserrat (800)
-2. Body text: Inter (500) or Poppins (400)
-3. Accent/Subtext: Inter (400) or SpaceGrotesk (400)
-
-TYPOGRAPHY TREATMENT:
-- Large headlines: 72-120px, font-weight: 700-900, letter-spacing: -0.03em
-- Subheadings: 36-54px, font-weight: 600-700, letter-spacing: -0.02em
-- Body: 20-28px, font-weight: 400-500, line-height: 1.5
-- Small caps: 14-16px, font-weight: 600, letter-spacing: 0.08em, text-transform: uppercase
-
-GRADIENT TEXT (use frequently):
-background: linear-gradient(90deg, #007AFF, #5856D6, #FF2D55);
-backgroundClip: 'text';
-WebkitBackgroundClip: 'text';
-WebkitTextFillColor: 'transparent';
+NEVER use fontFamily: 'serif' or fontFamily: 'sans-serif' without loading!
 
 ═══════════════════════════════════════════════════════════════════════════════
 ANIMATION EXCELLENCE (MANDATORY)

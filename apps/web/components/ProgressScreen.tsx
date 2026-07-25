@@ -173,9 +173,8 @@ export const ProgressScreen = ({ stage, percent }: ProgressScreenProps) => {
                 />
               ) : (
                 <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(percent, 5)}%` }}
-                  transition={{ duration: 0.5, ease: SOFT }}
+                  animate={{ width: `${percent}%` }}
+                  transition={{ duration: 0.3, ease: "linear" }}
                   className="h-full rounded-full bg-[#0071e3]"
                   style={{
                     boxShadow: "0 0 8px rgba(0,113,227,0.3)",
