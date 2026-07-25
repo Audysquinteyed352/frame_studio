@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { planFromPrompt, generateCode, fixCode, type Brief, type CodeFileMap } from "pipeline";
+import { compileCode } from "@/lib/compile";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,12 +25,12 @@ function resolveSkeletonDir() {
   }
 
   throw new Error(
-    `Could not locate packages/remotion-skeleton. Checked: ${candidates.join(", ")}`
+    `Could not locate packages/remotion-skeleton. Checked: ${candidates.join(", ")}`,
   );
 }
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5 minutes for render
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,20 +44,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
     }
 
-    // Check for API key: first from request body, then from cookies, finally from env
-    const apiKey = clientApiKey || (await getApiKey()) || process.env.GEMINI_API_KEY;
+    const apiKey =
+      clientApiKey || (await getApiKey()) || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
         { error: "API key required. Please provide your Gemini API key." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     console.log(`\n[Generate] Starting generation for prompt: "${prompt}"`);
-    console.log(`[Generate] Model: ${model}`);
-
-    // Set API key in environment for LLM calls
     process.env.GEMINI_API_KEY = apiKey;
 
     // STAGE 1: PLAN
@@ -64,10 +62,9 @@ export async function POST(req: NextRequest) {
     const planResult = await planFromPrompt(prompt, model);
 
     if (!planResult.valid) {
-      console.log(`[Generate] Request rejected: ${planResult.reason}`);
       return NextResponse.json(
         { error: planResult.reason },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,168 +73,65 @@ export async function POST(req: NextRequest) {
 
     // STAGE 2: CODEGEN
     console.log(`[Generate] STAGE: Generating Code...`);
-    const generatedCode: CodeFileMap = await generateCode(brief, [], model);
-    console.log(`[Generate] Codegen complete. Files: ${Object.keys(generatedCode).join(", ")}`);
+    let currentCode: CodeFileMap = await generateCode(brief, [], model);
+    console.log(`[Generate] Codegen complete. Files: ${Object.keys(currentCode).join(", ")}`);
 
-    const renderWorkerUrl = process.env.RENDER_WORKER_URL?.trim();
-    const requireRemoteWorker = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
-    let renderResult: { videoBuffer: Buffer; durationSeconds: number };
+    // STAGE 3 & 4: COMPILE & FIX LOOP
+    console.log(`[Generate] STAGE: Compiling...`);
+    let attempt = 0;
+    let compiledFiles: Record<string, string> | undefined;
+    const maxRetries = 3;
 
-    if (requireRemoteWorker && !renderWorkerUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "Production deployment requires RENDER_WORKER_URL to be configured. Set this to a separate render worker service for Vercel.",
-        },
-        { status: 500 }
-      );
+    while (attempt <= maxRetries) {
+      const compileResult = await compileCode(currentCode, skeletonDir);
+
+      if (compileResult.ok && compileResult.compiledFiles) {
+        console.log(`[Generate] Compilation succeeded on attempt ${attempt}`);
+        compiledFiles = compileResult.compiledFiles;
+        break;
+      }
+
+      attempt++;
+      console.warn(`[Generate] Compilation failed (attempt ${attempt}/${maxRetries})`);
+
+      if (attempt > maxRetries) {
+        return NextResponse.json(
+          {
+            error: `Compilation failed after ${maxRetries} attempts: ${compileResult.error}`,
+          },
+          { status: 500 },
+        );
+      }
+
+      console.log(`[Generate] Calling Fix AI for attempt ${attempt}...`);
+      currentCode = await fixCode(currentCode, compileResult.error!, model);
     }
 
-    if (renderWorkerUrl) {
-      console.log(`[Generate] Using remote render worker: ${renderWorkerUrl}`);
-      const workerEndpoint = new URL("/render", renderWorkerUrl).toString();
-      const workerResponse = await fetch(workerEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: generatedCode }),
-      });
-
-      // Safely handle worker response which may be JSON (with base64 MP4) or binary
-      const contentType = (workerResponse.headers.get("content-type") || "").toLowerCase();
-      let workerResponseBody: any = null;
-      let workerResponseText = "";
-      let workerBinary: Buffer | null = null;
-
-      if (contentType.includes("application/json") || contentType.includes("application/problem+json")) {
-        try {
-          workerResponseBody = await workerResponse.json();
-        } catch (e) {
-          try {
-            workerResponseText = await workerResponse.text();
-          } catch {
-            workerResponseText = "";
-          }
-        }
-      } else if (contentType.startsWith("video/") || contentType === "application/octet-stream") {
-        const ab = await workerResponse.arrayBuffer();
-        workerBinary = Buffer.from(ab);
-      } else {
-        try {
-          workerResponseText = await workerResponse.text();
-        } catch {
-          workerResponseText = "";
-        }
-      }
-
-      if (!workerResponse.ok) {
-        console.error("[Generate] Remote render worker error", {
-          status: workerResponse.status,
-          contentType,
-          body: workerResponseBody ?? workerResponseText,
-        });
-        const errMsg = workerResponseBody?.error ?? workerResponseText ?? "Remote render worker failed.";
-        return NextResponse.json({ error: errMsg }, { status: workerResponse.status || 500 });
-      }
-
-      if (workerBinary) {
-        renderResult = { videoBuffer: workerBinary, durationSeconds: Number(workerResponse.headers.get("x-duration") || 0) };
-      } else {
-          if (!workerResponseBody) {
-            console.error("[Generate] Remote worker returned invalid JSON. Raw response:", workerResponseText.slice ? workerResponseText.slice(0, 2000) : workerResponseText);
-            return NextResponse.json({ error: "Remote render worker returned an empty or invalid response." }, { status: 500 });
-          }
-
-        if (!workerResponseBody?.mp4) {
-          return NextResponse.json({ error: "Remote render worker returned an invalid response." }, { status: 500 });
-        }
-
-        renderResult = {
-          videoBuffer: Buffer.from(workerResponseBody.mp4, "base64"),
-          durationSeconds: workerResponseBody.durationSeconds,
-        };
-      }
-      const forwardedHeaders: Record<string, string> = {};
-      for (const headerName of [
-        "x-queue-position",
-        "x-queue-first",
-        "x-queue-active",
-        "x-queue-pending",
-      ]) {
-        const headerValue = workerResponse.headers.get(headerName);
-        if (headerValue) {
-          forwardedHeaders[headerName] = headerValue;
-        }
-      }
-
-      console.log(`[Generate] Remote render worker completed. Duration: ${renderResult.durationSeconds}s`);
-      return new NextResponse(renderResult.videoBuffer as unknown as BodyInit, {
-        headers: {
-          "Content-Type": "video/mp4",
-          "Content-Disposition": `attachment; filename="frame-studio-${Date.now()}.mp4"`,
-          "X-Duration": renderResult.durationSeconds.toString(),
-          ...forwardedHeaders,
-        },
-      });
-    } else {
-      // STAGE 3 & 4: COMPILE & FIX LOOP
-      console.log(`[Generate] STAGE: Compiling...`);
-      const { compileCode } = await import("../../../../../workers/render-worker/compile");
-      let currentCode = { ...generatedCode };
-      let attempt = 0;
-      let compiledProjectDir: string | null = null;
-      const maxRetries = 3;
-
-      while (attempt <= maxRetries) {
-        const compileResult = await compileCode(currentCode, skeletonDir);
-
-        if (compileResult.ok) {
-          console.log(`[Generate] Compilation succeeded on attempt ${attempt}`);
-          compiledProjectDir = compileResult.projectDir!;
-          currentCode = compileResult.ok ? currentCode : currentCode;
-          break;
-        }
-
-        attempt++;
-        console.warn(`[Generate] Compilation failed (attempt ${attempt}/${maxRetries}):`);
-        console.warn(compileResult.error);
-
-        if (attempt > maxRetries) {
-          return NextResponse.json(
-            {
-              error: `Compilation failed after ${maxRetries} attempts: ${compileResult.error}`,
-            },
-            { status: 500 }
-          );
-        }
-
-        console.log(`[Generate] Calling Fix AI for attempt ${attempt}...`);
-        currentCode = await fixCode(currentCode, compileResult.error!, model);
-      }
-
-      if (!compiledProjectDir) {
-        throw new Error("Missing compiled project directory");
-      }
-
-      // STAGE 5: RENDERING
-      console.log(`[Generate] STAGE: Rendering MP4 & Thumbnail...`);
-      const { renderComposition } = await import("../../../../../workers/render-worker/render");
-      renderResult = await renderComposition(compiledProjectDir);
-      console.log(`[Generate] Rendering complete. Duration: ${renderResult.durationSeconds}s`);
+    if (!compiledFiles) {
+      throw new Error("Missing compiled files");
     }
 
-    // Return video as direct download
-    return new NextResponse(renderResult.videoBuffer as unknown as BodyInit, {
-      headers: {
-        "Content-Type": "video/mp4",
-        "Content-Disposition": `attachment; filename="frame-studio-${Date.now()}.mp4"`,
-        "X-Duration": renderResult.durationSeconds.toString(),
+    const fps = 30;
+    const durationInFrames = Math.ceil(brief.durationSeconds * fps);
+
+    console.log(`[Generate] Returning compiled code (${Object.keys(compiledFiles).length} files)`);
+
+    return NextResponse.json({
+      compiledFiles,
+      sourceFiles: currentCode,
+      metadata: {
+        durationInFrames,
+        fps,
+        width: 1920,
+        height: 1080,
+        durationSeconds: brief.durationSeconds,
       },
     });
   } catch (err: any) {
     console.error("[Generate] Error:", err);
     return NextResponse.json(
       { error: err.message || "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

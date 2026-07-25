@@ -1,46 +1,57 @@
-# 🤝 Contributing to Frame Studio
+# Contributing to Frame Studio
 
-Thank you for your interest in contributing to **Frame Studio**! Follow these guidelines to keep the project clean, secure, and professional.
+## Project Structure
 
----
+```
+apps/web/                  Next.js 15 app (Vercel)
+├── app/api/generate/route.ts    AI pipeline + compile endpoint
+├── app/page.tsx                 Client UI + browser render trigger
+├── components/                  UI components
+├── lib/
+│   ├── compile.ts               Server: TS check + TSX→JS via esbuild
+│   ├── renderInBrowser.ts       Client: evaluates compiled code + renders MP4
+│   └── apiKey.ts                API key cookie helpers
+packages/pipeline/               Shared AI pipeline (plan, codegen, fix)
+packages/remotion-skeleton/      Template Remotion canvas project
+```
 
-## 📂 Repository Layout
+## Architecture
 
-- `apps/web`: Next.js 15 frontend application, including all UI views, state, and route handlers.
-- `packages/pipeline`: Shared core LLM pipeline (prompt design, schemas, and LLM call clients).
-- `packages/remotion-skeleton`: Boilerplate Remotion canvas used as a sandboxed compiler target.
-- `workers/render-worker`: Background Node.js compilation and FFmpeg rendering coordinator.
+- **Server** (Next.js API route, runs on Vercel free tier):
+  1. Plan: Gemini creates video structure from prompt
+  2. Codegen: Gemini writes React/Remotion code
+  3. Compile: TypeScript validation + fix loop (up to 3 retries)
+  4. esbuild transforms TSX→JS (CJS format)
+  5. Returns `{ compiledFiles, metadata }` as JSON
 
----
+- **Client** (Browser, no server needed for render):
+  1. Receives compiled CJS code
+  2. Evaluates via `new Function()` with a custom `require()` shim
+  3. `@remotion/web-renderer` renders MP4 using WebCodecs API
+  4. Downloads directly — no queue, no infrastructure
 
-## 💡 Code & Architecture Principles
+## Import Safety
 
-### 1. Accountless Architecture
-Do not introduce user authentication tables, session cookies, or user profile records. Frame Studio is fully anonymous and prompt-driven.
-
-### 2. Sandbox Import Safety
-Generated code may **only** import from the allowed list:
+Generated code may **only** import from:
 - `remotion`
 - `react`
 - `react-dom`
-- `@remotion/google-fonts`
-- Relative internal files (`./*`)
+- `@remotion/google-fonts` (and subpaths like `@remotion/google-fonts/Inter`)
+- Relative files (`./Scene1`, `../helpers`, etc.)
 
-Any other import must fail static compilation checks.
+The server rejects any code with disallowed imports. This is enforced by `validateStaticImports()` in `lib/compile.ts`.
 
-### 3. Decoupled Processing
-Heavy video compilation, bundler assembly, and FFmpeg renders must run exclusively inside the `render-worker` daemon. Keep Next.js routes light and serverless-friendly.
+## Client-Side Module Resolution
 
----
+The generated code is compiled to CJS by esbuild on the server. On the client, `renderInBrowser.ts` provides a CJS shim:
 
-## 🛠️ PR Submission Checklist
+- `require("remotion")` → maps to the actual `remotion` module (imported in the page)
+- `require("./Scene1")` → resolves to `src/Scene1.tsx` in the compiled files map
+- `require("@remotion/google-fonts/Inter")` → shim that returns `{ fontFamily: "Inter" }`
 
-1. Make sure all TypeScript compilations pass cleanly in the workspace:
-   ```bash
-   pnpm build
-   ```
-2. Verify that `pnpm worker` boots up without credentials errors.
-3. Test your changes against the render pipeline target:
-   ```bash
-   pnpm test:render
-   ```
+## PR Checklist
+
+1. `pnpm build` — full production build must pass
+2. `pnpm dev` — dev server must start without errors
+3. No stale references to old render-worker, Lambda, or RENDER_WORKER_URL
+4. Verify browser rendering works in Chrome 94+ / Firefox 130+
