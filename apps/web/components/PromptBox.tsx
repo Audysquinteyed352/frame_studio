@@ -42,7 +42,7 @@ export const PromptBox: React.FC<PromptBoxProps> = ({ onGenerate, isLoading = fa
   const textareaRef                        = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (isLoading) setButtonState("loading");
+    setButtonState(isLoading ? "loading" : "idle");
   }, [isLoading]);
 
   useEffect(() => {
